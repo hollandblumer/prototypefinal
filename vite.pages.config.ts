@@ -4,7 +4,7 @@ import { resolve } from "node:path";
 
 export default defineConfig({
   root: resolve(__dirname, "github-pages"),
-  base: "/prototypev1/",
+  base: "/prototypefinal/",
   plugins: [react()],
   build: {
     outDir: resolve(__dirname, "dist-pages"),
