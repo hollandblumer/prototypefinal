@@ -11,7 +11,7 @@ export default function Home() {
     return (
       <main className="prototype-shell">
         <iframe
-          src="./ewey-reference.html?v=fashion"
+          src="./ewey-reference.html?v=fashion-2"
           title="EWEy interactive prototype"
           allow="fullscreen"
         />
