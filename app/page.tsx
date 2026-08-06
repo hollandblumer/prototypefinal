@@ -13,7 +13,7 @@ export default function Home() {
       <main className="prototype-shell">
         <iframe
           src={isDev
-            ? "./ewey-reference.html?v=dev-direct&start=worldtype"
+            ? "./ewey-reference.html?v=dev-live-events-league-sentence&start=worldtype"
             : "./ewey-reference.html?v=fashion-3"}
           title="EWEy interactive prototype"
           allow="fullscreen"

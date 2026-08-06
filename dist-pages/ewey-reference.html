@@ -140,8 +140,13 @@
   /* Peek modal */
   #peek{position:fixed; inset:0; background:rgba(6,10,20,.55); backdrop-filter:blur(8px);
     -webkit-backdrop-filter:blur(8px); display:flex; align-items:center; justify-content:center; z-index:50; padding:24px;}
-  #peek .panel{background:#fff; border-radius:24px; max-width:440px; width:100%; overflow:hidden;
+  #peek .panel{background:#fff; border-radius:24px; max-width:440px; width:100%; max-height:calc(100vh - 48px); overflow-y:auto;
     box-shadow:0 30px 80px rgba(0,0,0,.3); text-align:left;}
+  #peek .panel div[style*="color:var(--muted)"][style*="font-weight:600"],
+  #peek .panel div[style*="color:#8A6E14"][style*="font-weight:600"],
+  #peek .panel div[style*="color:rgba(255,255,255,.78)"][style*="font-weight:600"]{
+    text-align:center;
+  }
 
   .ai-row{display:flex; justify-content:space-between; align-items:center; padding:14px 0;
     border-bottom:1px solid var(--line); opacity:.15; transition:opacity .5s;}
@@ -192,7 +197,7 @@ var WORLDS = {
   ul:{name:"Unleashed", genre:"Animated Comedy", grad:"linear-gradient(135deg,#7A2E12 0%,#D96C2C 55%,#F2B267 100%)"},
   lf:{name:"The Last Future", genre:"Sci-Fi Mystery", grad:"linear-gradient(135deg,#0D1033 0%,#3A2E8C 55%,#7C6CD9 100%)"}
 };
-var CATEGORIES = [["📺","Series"],["🎬","Film"],["📚","Books"],["🎵","Music"],["🏈","Sports"],
+var CATEGORIES = [["📺","Television Series"],["🎬","Film"],["📚","Books"],["🎵","Music"],["🏈","Sports"],
   ["🎙️","Podcasts"],["👗","Fashion"],["📰","Journalism"],["🎥","Documentaries"],["🎮","Games"],["🎭","Live Events"]];
 var SUPERPOWERS = [
   {id:"perform", icon:"🎭", name:"Perform", sub:"One-minute videos · acting · comedy · improv"},
@@ -235,6 +240,11 @@ var CATPEEK = {
   "Documentaries":["Tell us your theory — and why. The most compelling theories get featured in the official companion episode.","Ask the filmmakers — top-voted questions get answered on camera.","Who changed your life? Share your one-minute story — selected stories join the companion film, credited.","Win a seat at the premiere — and meet the filmmakers."],
   "Games":["Win early access — be one of the first players inside the next expansion.","Design a side quest — the winning quest ships in the next update, with your name in the credits.","Hide the easter egg every player will hunt for."],
   "Live Events":["Win front-row seats and backstage passes for the next stop on the tour.","Vote the encore setlist into existence — then watch it happen live.","Record your section's fan chant — the best one plays in the arena.","Design this tour's limited merch drop — the winning design sells at the venue, credited."]
+};
+var FILM_CATEGORIES = {
+  "Participate":{label:"⭐ Signature Experience",title:"Become an Official Background Extra in the Next Episode or Film.",intro:"One fan will be invited to appear as an official background extra in an upcoming production.",items:["Recreate a favorite scene in another time period.","Perform the scene as a comedy, western, musical or sci-fi.","Play one of the characters in your own style.","Show what another person in that world might be doing during the same moment.","Design official merchandise.","Create an alternate movie poster."]},
+  "Join the Official Story League":{items:["Weekly Challenges","XP","Badges","Leaderboards","Story World MVP"]},
+  "Possible Official Experiences & Recognition":{items:["Lunch with one of the actors.","Visit the set.","Become an official background extra.","Meet the creator.","Attend the premiere.","Featured in the Official Fan Showcase.","Included in creator-curated “Best Of” compilations on official social channels."],footer:"Official participation alongside the canon. Never rewriting it. Always celebrating it."}
 };
 var MOSAIC_ICONS = ["🎭","🎨","✍️","📷","🎬","🎤","😂","🎵","🐶","☕","🛸","📝"];
 var SCENES = ["cold","worldtype","storyworld","entry","power","experience","create","mosaic","ai","continues","win","local","beyond","creator","end"];
@@ -319,8 +329,8 @@ function scWorldType(){
   var el = document.getElementById("scene");
   el.className = "scene";
   var tiles = CATEGORIES.map(function(c, i){
-    var act = c[1] === "Series" ? "next()" : "openCatPeek('" + c[1] + "')";
-    var featured = c[1] === "Series" ? '<div style="font-size:10.5px; font-weight:600; letter-spacing:.06em; text-transform:uppercase; color:var(--gold); margin-top:6px">Featured demo</div>' : "";
+    var act = c[1] === "Television Series" ? "next()" : "openCatPeek('" + c[1] + "')";
+    var featured = c[1] === "Television Series" ? '<div style="font-size:10.5px; font-weight:600; letter-spacing:.06em; text-transform:uppercase; color:var(--gold); margin-top:6px">Featured demo</div>' : "";
     return '<div class="card click center rise" style="padding:22px 12px; animation-delay:' + (i*45) + 'ms" onclick="' + act + '">' +
       '<div style="font-size:30px">' + c[0] + '</div>' +
       '<div style="font-weight:600; font-size:15px; margin-top:8px">' + c[1] + '</div>' + featured + '</div>';
@@ -337,6 +347,16 @@ function scWorldType(){
 }
 
 function openCatPeek(name){
+  if (name === "Film") { openFilmCategories(); return; }
+  if (name === "Sports") { openSportsCategories(); return; }
+  if (name === "Music") { openMusicCategories(); return; }
+  if (name === "Podcasts") { openPodcastCategories(); return; }
+  if (name === "Books") { openBookCategories(); return; }
+  if (name === "Documentaries") { openDocumentaryCategories(); return; }
+  if (name === "Journalism") { openJournalismCategories(); return; }
+  if (name === "Fashion") { openFashionCategories(); return; }
+  if (name === "Games") { openGameCategories(); return; }
+  if (name === "Live Events") { openLiveEventCategories(); return; }
   var items = CATPEEK[name].map(function(p){
     return '<div style="font-size:14px; line-height:1.5; background:var(--canvas); border-radius:12px; padding:12px 14px; border:1px solid var(--line)">' + p + '</div>';
   }).join("");
@@ -350,10 +370,471 @@ function openCatPeek(name){
       '<div style="font-weight:700; font-size:20px; margin-top:12px">' + name + '</div>' +
       '<div style="font-size:13px; color:var(--muted); margin-top:2px">Example experiences for this genre. Every world gets prompts native to its own audience.</div>' +
       '<div style="margin-top:16px; display:grid; gap:10px">' + items + '</div>' +
-      '<div style="margin-top:20px; background:var(--goldsoft); border:1px solid rgba(198,160,46,.27); border-radius:12px; padding:12px 14px; font-size:13px; line-height:1.5; color:#8A6E14; font-weight:600">For the complete walkthrough, choose <span style="text-decoration:underline">Series</span> — our featured demo.</div>' +
+      '<div style="margin-top:20px; background:var(--goldsoft); border:1px solid rgba(198,160,46,.27); border-radius:12px; padding:12px 14px; font-size:13px; line-height:1.5; color:#8A6E14; font-weight:600">For the complete walkthrough, choose <span style="text-decoration:underline">Television Series</span> — our featured demo.</div>' +
+      '<div style="margin-top:14px; font-size:13px; line-height:1.5; color:var(--muted); font-weight:600">Official participation alongside the canon. Never rewriting it. Always celebrating it.</div>' +
       '<div style="margin-top:14px"><button class="btn" style="width:100%" onclick="document.getElementById(\'peek\').remove()">Back to worlds</button></div>' +
     '</div></div>';
   document.body.appendChild(m);
+}
+
+function openLiveEventCategories(){
+  var existing = document.getElementById("peek");
+  if (existing) existing.remove();
+  var m = document.createElement("div");
+  m.id = "peek"; m.className = "cinema";
+  m.onclick = function(){ m.remove(); };
+  m.innerHTML = '<div class="panel" onclick="event.stopPropagation()">' +
+    '<div style="height:90px; background:linear-gradient(135deg,#7A2E12,#D96C2C)"></div>' +
+    '<div style="padding:28px">' +
+      '<div style="font-size:12px; font-weight:700; letter-spacing:.12em">LIVE EVENTS</div>' +
+      '<div style="font-weight:700; font-size:22px; margin-top:12px">Choose a category.</div>' +
+      '<div style="margin-top:18px; display:grid; gap:12px">' +
+        '<button class="card click" style="padding:18px; font:inherit; text-align:left" onclick="openLiveEventSection(\'participate\')"><div style="font-weight:700; font-size:16px">Participate</div></button>' +
+        '<button class="card click" style="padding:18px; font:inherit; text-align:left" onclick="openLiveEventSection(\'league\')"><div style="font-weight:700; font-size:16px">Join the Official Live Events League</div></button>' +
+        '<button class="card click" style="padding:18px; font:inherit; text-align:left" onclick="openLiveEventSection(\'recognition\')"><div style="font-weight:700; font-size:16px">Possible Official Experiences &amp; Recognition</div></button>' +
+      '</div>' +
+      '<div style="margin-top:18px; font-size:13px; line-height:1.5; color:var(--muted); font-weight:600">Official participation alongside the canon. Never rewriting it. Always celebrating it.</div>' +
+      '<div style="margin-top:14px"><button class="btn" style="width:100%" onclick="document.getElementById(\'peek\').remove()">Back to worlds</button></div>' +
+    '</div></div>';
+  document.body.appendChild(m);
+}
+
+function openLiveEventSection(section){
+  var title = section === "participate" ? "Participate" : section === "league" ? "Join the Official Live Events League" : "Possible Official Experiences & Recognition";
+  var participate = ["Vote the encore setlist into existence — then watch it happen live.","Record your section's fan chant — the best one plays in the arena.","Design this tour's limited merch drop — the winning design sells at the venue, credited."];
+  var league = ["Complete weekly event challenges, check in at events, earn XP and badges, climb the leaderboards, and compete to become Fan MVP."];
+  var recognition = ["Win front-row seats and backstage passes for the next stop on the tour."];
+  var list = section === "participate" ? participate : section === "league" ? league : recognition;
+  var items = list.map(function(p){ return '<li style="font-size:14px; line-height:1.5; margin-top:8px">' + p + '</li>'; }).join("");
+  var m = document.getElementById("peek");
+  if (!m) return;
+  m.innerHTML = '<div class="panel" onclick="event.stopPropagation()">' +
+    '<div style="height:90px; background:linear-gradient(135deg,#7A2E12,#D96C2C)"></div>' +
+    '<div style="padding:28px">' +
+      '<div style="font-size:12px; font-weight:700; letter-spacing:.12em">LIVE EVENTS</div>' +
+      '<div style="font-weight:700; font-size:22px; margin-top:12px">' + title + '</div>' +
+      (items ? '<ul style="margin:14px 0 0; padding-left:20px">' + items + '</ul>' : '') +
+      '<div style="margin-top:20px; background:var(--goldsoft); border:1px solid rgba(198,160,46,.27); border-radius:12px; padding:14px; font-size:14px; line-height:1.55; color:#8A6E14; font-weight:600">Official participation alongside the canon. Never rewriting it. Always celebrating it.</div>' +
+      '<div style="margin-top:14px"><button class="btn" style="width:100%" onclick="openLiveEventCategories()">Back to Live Events</button></div>' +
+    '</div></div>';
+}
+
+function openGameCategories(){
+  var existing = document.getElementById("peek");
+  if (existing) existing.remove();
+  var m = document.createElement("div");
+  m.id = "peek"; m.className = "cinema";
+  m.onclick = function(){ m.remove(); };
+  m.innerHTML = '<div class="panel" onclick="event.stopPropagation()">' +
+    '<div style="height:90px; background:linear-gradient(135deg,#0B1220,#2A3A5C)"></div>' +
+    '<div style="padding:28px">' +
+      '<div style="font-size:12px; font-weight:700; letter-spacing:.12em">GAMES</div>' +
+      '<div style="font-weight:700; font-size:22px; margin-top:12px">Choose a category.</div>' +
+      '<div style="margin-top:18px; display:grid; gap:12px">' +
+        '<button class="card click" style="padding:18px; font:inherit; text-align:left" onclick="openGameSection(\'participate\')"><div style="font-weight:700; font-size:16px">Participate</div></button>' +
+        '<button class="card click" style="padding:18px; font:inherit; text-align:left" onclick="openGameSection(\'league\')"><div style="font-weight:700; font-size:16px">Join the Official Game League</div></button>' +
+        '<button class="card click" style="padding:18px; font:inherit; text-align:left" onclick="openGameSection(\'recognition\')"><div style="font-weight:700; font-size:16px">Possible Official Experiences &amp; Recognition</div></button>' +
+      '</div>' +
+      '<div style="margin-top:18px; font-size:13px; line-height:1.5; color:var(--muted); font-weight:600">Official participation alongside the canon. Never rewriting it. Always celebrating it.</div>' +
+      '<div style="margin-top:14px"><button class="btn" style="width:100%" onclick="document.getElementById(\'peek\').remove()">Back to worlds</button></div>' +
+    '</div></div>';
+  document.body.appendChild(m);
+}
+
+function openGameSection(section){
+  var title = section === "participate" ? "Participate" : section === "league" ? "Join the Official Game League" : "Possible Official Experiences & Recognition";
+  var participate = ["Design a side quest — the winning quest ships in the next update, with your name in the credits.","Hide the easter egg every player will hunt for."];
+  var recognition = ["Win early access — be one of the first players inside the next expansion."];
+  var list = section === "participate" ? participate : section === "recognition" ? recognition : [];
+  var items = list.map(function(p){ return '<li style="font-size:14px; line-height:1.5; margin-top:8px">' + p + '</li>'; }).join("");
+  var m = document.getElementById("peek");
+  if (!m) return;
+  m.innerHTML = '<div class="panel" onclick="event.stopPropagation()">' +
+    '<div style="height:90px; background:linear-gradient(135deg,#0B1220,#2A3A5C)"></div>' +
+    '<div style="padding:28px">' +
+      '<div style="font-size:12px; font-weight:700; letter-spacing:.12em">GAMES</div>' +
+      '<div style="font-weight:700; font-size:22px; margin-top:12px">' + title + '</div>' +
+      (items ? '<ul style="margin:14px 0 0; padding-left:20px">' + items + '</ul>' : '') +
+      '<div style="margin-top:20px; background:var(--goldsoft); border:1px solid rgba(198,160,46,.27); border-radius:12px; padding:14px; font-size:14px; line-height:1.55; color:#8A6E14; font-weight:600">Official participation alongside the canon. Never rewriting it. Always celebrating it.</div>' +
+      '<div style="margin-top:14px"><button class="btn" style="width:100%" onclick="openGameCategories()">Back to Games</button></div>' +
+    '</div></div>';
+}
+
+function openFashionCategories(){
+  var existing = document.getElementById("peek");
+  if (existing) existing.remove();
+  var m = document.createElement("div");
+  m.id = "peek"; m.className = "cinema";
+  m.onclick = function(){ m.remove(); };
+  m.innerHTML = '<div class="panel" onclick="event.stopPropagation()">' +
+    '<div style="height:90px; background:linear-gradient(135deg,#5C1B4A,#B13E8E)"></div>' +
+    '<div style="padding:28px">' +
+      '<div style="font-size:12px; font-weight:700; letter-spacing:.12em">FASHION</div>' +
+      '<div style="font-weight:700; font-size:22px; margin-top:12px">Choose a category.</div>' +
+      '<div style="margin-top:18px; display:grid; gap:12px">' +
+        '<button class="card click" style="padding:18px; font:inherit; text-align:left" onclick="openFashionSection(\'participate\')"><div style="font-weight:700; font-size:16px">Participate</div></button>' +
+        '<button class="card click" style="padding:18px; font:inherit; text-align:left" onclick="openFashionSection(\'league\')"><div style="font-weight:700; font-size:16px">Join the Official Fashion League</div></button>' +
+        '<button class="card click" style="padding:18px; font:inherit; text-align:left" onclick="openFashionSection(\'recognition\')"><div style="font-weight:700; font-size:16px">Possible Official Experiences &amp; Recognition</div></button>' +
+      '</div>' +
+      '<div style="margin-top:18px; font-size:13px; line-height:1.5; color:var(--muted); font-weight:600">Official participation alongside the canon. Never rewriting it. Always celebrating it.</div>' +
+      '<div style="margin-top:14px"><button class="btn" style="width:100%" onclick="document.getElementById(\'peek\').remove()">Back to worlds</button></div>' +
+    '</div></div>';
+  document.body.appendChild(m);
+}
+
+function openFashionSection(section){
+  var title = section === "participate" ? "Participate" : section === "league" ? "Join the Official Fashion League" : "Possible Official Experiences & Recognition";
+  var participate = ["Design an outfit inspired by the artist or character.","Design a look that could be worn on stage, at a concert, or at a premiere.","Style this week’s look.","Recreate the runway.","Design official accessories.","Share your finished collection."];
+  var league = ["Weekly Design Challenges","XP","Badges","Leaderboards","Style Icon"];
+  var recognition = ["Winning design worn by an artist on stage or at a concert.","Winning design worn at a premiere or major event.","Meet the designer.","Front-row invitations.","VIP fashion events.","Featured in the Official Style Showcase.","Included in creator-curated lookbooks and campaign highlights."];
+  var list = section === "participate" ? participate : section === "league" ? league : recognition;
+  var items = list.map(function(p){ return '<li style="font-size:14px; line-height:1.5; margin-top:8px">' + p + '</li>'; }).join("");
+  var m = document.getElementById("peek");
+  if (!m) return;
+  m.innerHTML = '<div class="panel" onclick="event.stopPropagation()">' +
+    '<div style="height:90px; background:linear-gradient(135deg,#5C1B4A,#B13E8E)"></div>' +
+    '<div style="padding:28px">' +
+      '<div style="font-size:12px; font-weight:700; letter-spacing:.12em">FASHION</div>' +
+      '<div style="font-weight:700; font-size:22px; margin-top:12px">' + title + '</div>' +
+      '<ul style="margin:14px 0 0; padding-left:20px">' + items + '</ul>' +
+      '<div style="margin-top:20px; background:var(--goldsoft); border:1px solid rgba(198,160,46,.27); border-radius:12px; padding:14px; font-size:14px; line-height:1.55; color:#8A6E14; font-weight:600">Official participation alongside the canon. Never rewriting it. Always celebrating it.</div>' +
+      '<div style="margin-top:14px"><button class="btn" style="width:100%" onclick="openFashionCategories()">Back to Fashion</button></div>' +
+    '</div></div>';
+}
+
+function openJournalismCategories(){
+  var existing = document.getElementById("peek");
+  if (existing) existing.remove();
+  var m = document.createElement("div");
+  m.id = "peek"; m.className = "cinema";
+  m.onclick = function(){ m.remove(); };
+  m.innerHTML = '<div class="panel" onclick="event.stopPropagation()">' +
+    '<div style="height:90px; background:linear-gradient(135deg,#263238,#607D8B)"></div>' +
+    '<div style="padding:28px">' +
+      '<div style="font-size:12px; font-weight:700; letter-spacing:.12em">📰 JOURNALISM</div>' +
+      '<div style="font-weight:700; font-size:22px; margin-top:12px">Choose a category.</div>' +
+      '<div style="margin-top:18px; display:grid; gap:12px">' +
+        '<button class="card click" style="padding:18px; font:inherit; text-align:left" onclick="openJournalismSection(\'participate\')"><div style="font-weight:700; font-size:16px">Participate</div></button>' +
+        '<button class="card click" style="padding:18px; font:inherit; text-align:left" onclick="openJournalismSection(\'league\')"><div style="font-weight:700; font-size:16px">Join the Journalism League</div></button>' +
+        '<button class="card click" style="padding:18px; font:inherit; text-align:left" onclick="openJournalismSection(\'recognition\')"><div style="font-weight:700; font-size:16px">Possible Official Experiences &amp; Recognition</div></button>' +
+      '</div>' +
+      '<div style="margin-top:18px; font-size:13px; line-height:1.5; color:var(--muted); font-weight:600">Official participation alongside the canon. Never rewriting it. Always celebrating it.</div>' +
+      '<div style="margin-top:14px"><button class="btn" style="width:100%" onclick="document.getElementById(\'peek\').remove()">Back to worlds</button></div>' +
+    '</div></div>';
+  document.body.appendChild(m);
+}
+
+function openJournalismSection(section){
+  var title = section === "participate" ? "Participate" : section === "league" ? "Join the Journalism League" : "Possible Official Experiences & Recognition";
+  var participate = ["Spotlight someone making a difference.","Share verified community stories.","Interview local changemakers.","Highlight positive news."];
+  var league = ["Verified Participation","XP","Badges","Leaderboards"];
+  var recognition = ["Meet the journalist.","VIP newsroom discussions.","Community recognition.","Featured Community Story of the Week."];
+  var list = section === "participate" ? participate : section === "league" ? league : recognition;
+  var items = list.map(function(p){ return '<li style="font-size:14px; line-height:1.5; margin-top:8px">' + p + '</li>'; }).join("");
+  var signature = section === "recognition" ?
+    '<div style="font-size:12px; font-weight:700; letter-spacing:.12em; margin-top:16px">📰 JOURNALISM</div>' +
+    '<div style="color:var(--gold); font-size:13px; font-weight:700; margin-top:14px">⭐ Signature Experience</div>' +
+    '<div style="font-weight:700; font-size:18px; line-height:1.35; margin-top:10px">Your Community Story Is Featured by the Journalist.</div>' +
+    '<div style="font-size:14px; line-height:1.55; margin-top:12px">Not writing the news.</div>' +
+    '<div style="font-size:14px; line-height:1.55; color:var(--muted); margin-top:8px">Helping discover stories worth telling.</div>' : "";
+  var m = document.getElementById("peek");
+  if (!m) return;
+  m.innerHTML = '<div class="panel" onclick="event.stopPropagation()">' +
+    '<div style="height:90px; background:linear-gradient(135deg,#263238,#607D8B)"></div>' +
+    '<div style="padding:28px">' +
+      '<div style="font-size:12px; font-weight:700; letter-spacing:.12em">JOURNALISM</div>' +
+      '<div style="font-weight:700; font-size:22px; margin-top:12px">' + title + '</div>' +
+      signature +
+      '<ul style="margin:14px 0 0; padding-left:20px">' + items + '</ul>' +
+      '<div style="margin-top:20px; background:var(--goldsoft); border:1px solid rgba(198,160,46,.27); border-radius:12px; padding:14px; font-size:14px; line-height:1.55; color:#8A6E14; font-weight:600">Official participation alongside the canon. Never rewriting it. Always celebrating it.</div>' +
+      '<div style="margin-top:14px"><button class="btn" style="width:100%" onclick="openJournalismCategories()">Back to Journalism</button></div>' +
+    '</div></div>';
+}
+
+function openDocumentaryCategories(){
+  var existing = document.getElementById("peek");
+  if (existing) existing.remove();
+  var m = document.createElement("div");
+  m.id = "peek"; m.className = "cinema";
+  m.onclick = function(){ m.remove(); };
+  m.innerHTML = '<div class="panel" onclick="event.stopPropagation()">' +
+    '<div style="height:90px; background:linear-gradient(135deg,#0D1033,#3A2E8C)"></div>' +
+    '<div style="padding:28px">' +
+      '<div style="font-size:12px; font-weight:700; letter-spacing:.12em">🎥 DOCUMENTARIES</div>' +
+      '<div style="font-weight:700; font-size:22px; margin-top:12px">Choose a category.</div>' +
+      '<div style="margin-top:18px; display:grid; gap:12px">' +
+        '<button class="card click" style="padding:18px; font:inherit; text-align:left" onclick="openDocumentarySection(\'participate\')"><div style="font-weight:700; font-size:16px">Participate</div></button>' +
+        '<button class="card click" style="padding:18px; font:inherit; text-align:left" onclick="openDocumentarySection(\'league\')"><div style="font-weight:700; font-size:16px">Join the Documentary League</div></button>' +
+        '<button class="card click" style="padding:18px; font:inherit; text-align:left" onclick="openDocumentarySection(\'recognition\')"><div style="font-weight:700; font-size:16px">Possible Official Experiences &amp; Recognition</div></button>' +
+      '</div>' +
+      '<div style="margin-top:18px; font-size:13px; line-height:1.5; color:var(--muted); font-weight:600">Official participation alongside the canon. Never rewriting it. Always celebrating it.</div>' +
+      '<div style="margin-top:14px"><button class="btn" style="width:100%" onclick="document.getElementById(\'peek\').remove()">Back to worlds</button></div>' +
+    '</div></div>';
+  document.body.appendChild(m);
+}
+
+function openDocumentarySection(section){
+  var title = section === "participate" ? "Participate" : section === "league" ? "Join the Documentary League" : "Possible Official Experiences & Recognition";
+  var participate = ["Share your story.","Interview someone in your community.","Upload historical photos.","Visit important locations.","Help preserve history."];
+  var league = ["Community Contributions","XP","Badges","Leaderboards"];
+  var recognition = ["Meet the filmmaker.","VIP screenings.","Premieres.","Exclusive discussions.","Featured in the Community Story Showcase."];
+  var list = section === "participate" ? participate : section === "league" ? league : recognition;
+  var items = list.map(function(p){ return '<li style="font-size:14px; line-height:1.5; margin-top:8px">' + p + '</li>'; }).join("");
+  var signature = section === "recognition" ?
+    '<div style="color:var(--muted); margin-top:14px">⸻</div>' +
+    '<div style="font-size:12px; font-weight:700; letter-spacing:.12em; margin-top:14px">🎥 DOCUMENTARIES</div>' +
+    '<div style="color:var(--gold); font-size:13px; font-weight:700; margin-top:14px">⭐ Signature Experience</div>' +
+    '<div style="font-weight:700; font-size:18px; line-height:1.35; margin-top:10px">Your Story Becomes Part of the Official Impact Campaign.</div>' +
+    '<div style="font-size:14px; line-height:1.55; margin-top:12px">Not changing the documentary.</div>' +
+    '<div style="font-size:14px; line-height:1.55; color:var(--muted); margin-top:8px">But your interview becomes part of the outreach campaign surrounding</div>' : "";
+  var m = document.getElementById("peek");
+  if (!m) return;
+  m.innerHTML = '<div class="panel" onclick="event.stopPropagation()">' +
+    '<div style="height:90px; background:linear-gradient(135deg,#0D1033,#3A2E8C)"></div>' +
+    '<div style="padding:28px">' +
+      '<div style="font-size:12px; font-weight:700; letter-spacing:.12em">DOCUMENTARIES</div>' +
+      '<div style="font-weight:700; font-size:22px; margin-top:12px">' + title + '</div>' +
+      signature +
+      '<ul style="margin:14px 0 0; padding-left:20px">' + items + '</ul>' +
+      '<div style="margin-top:20px; background:var(--goldsoft); border:1px solid rgba(198,160,46,.27); border-radius:12px; padding:14px; font-size:14px; line-height:1.55; color:#8A6E14; font-weight:600">Official participation alongside the canon. Never rewriting it. Always celebrating it.</div>' +
+      '<div style="margin-top:14px"><button class="btn" style="width:100%" onclick="openDocumentaryCategories()">Back to Documentaries</button></div>' +
+    '</div></div>';
+}
+
+function openBookCategories(){
+  var existing = document.getElementById("peek");
+  if (existing) existing.remove();
+  var m = document.createElement("div");
+  m.id = "peek"; m.className = "cinema";
+  m.onclick = function(){ m.remove(); };
+  m.innerHTML = '<div class="panel" onclick="event.stopPropagation()">' +
+    '<div style="height:90px; background:linear-gradient(135deg,#3A2E10,#8A6E14)"></div>' +
+    '<div style="padding:28px">' +
+      '<div style="font-size:12px; font-weight:700; letter-spacing:.12em">📚 BOOKS</div>' +
+      '<div style="font-weight:700; font-size:22px; margin-top:12px">Choose a category.</div>' +
+      '<div style="margin-top:18px; display:grid; gap:12px">' +
+        '<button class="card click" style="padding:18px; font:inherit; text-align:left" onclick="openBookSection(\'participate\')"><div style="font-weight:700; font-size:16px">Participate</div></button>' +
+        '<button class="card click" style="padding:18px; font:inherit; text-align:left" onclick="openBookSection(\'league\')"><div style="font-weight:700; font-size:16px">Join the Official Book League</div></button>' +
+        '<button class="card click" style="padding:18px; font:inherit; text-align:left" onclick="openBookSection(\'recognition\')"><div style="font-weight:700; font-size:16px">Possible Official Experiences &amp; Recognition</div></button>' +
+      '</div>' +
+      '<div style="margin-top:18px; font-size:13px; line-height:1.5; color:var(--muted); font-weight:600">Official participation alongside the canon. Never rewriting it. Always celebrating it.</div>' +
+      '<div style="margin-top:14px"><button class="btn" style="width:100%" onclick="document.getElementById(\'peek\').remove()">Back to worlds</button></div>' +
+    '</div></div>';
+  document.body.appendChild(m);
+}
+
+function openBookSection(section){
+  var title = section === "participate" ? "Participate" : section === "league" ? "Join the Official Book League" : "Possible Official Experiences & Recognition";
+  var participate = ["Read your favorite passage.","Create fan artwork.","Build your reading nook.","Dress as someone from the story world.","Visit places inspired by the book."];
+  var league = ["Reading Milestones","Book Clubs","XP","Badges","Leaderboards"];
+  var recognition = ["Meet the author.","Signed books.","Private discussion.","VIP literary events.","Featured in the Official Reader Gallery.","Included in the creator’s favorite fan creations."];
+  var list = section === "participate" ? participate : section === "league" ? league : recognition;
+  var items = list.map(function(p){ return '<li style="font-size:14px; line-height:1.5; margin-top:8px">' + p + '</li>'; }).join("");
+  var signature = section === "recognition" ?
+    '<div style="color:var(--gold); font-size:13px; font-weight:700; margin-top:16px">⭐ Signature Experience</div>' +
+    '<div style="font-weight:700; font-size:18px; line-height:1.35; margin-top:10px">Have the Author Personally Read Your Favorite Passage.</div>' +
+    '<div style="font-size:14px; color:var(--muted); font-weight:700; margin-top:12px">Or…</div>' +
+    '<div style="font-size:14px; line-height:1.55; margin-top:8px">You’re invited to an exclusive virtual book club with the author.</div>' +
+    '<div style="font-size:14px; color:var(--muted); font-weight:700; margin-top:12px">Or…</div>' +
+    '<div style="font-size:14px; line-height:1.55; margin-top:8px">Your artwork becomes the official reading guide cover.</div>' : "";
+  var m = document.getElementById("peek");
+  if (!m) return;
+  m.innerHTML = '<div class="panel" onclick="event.stopPropagation()">' +
+    '<div style="height:90px; background:linear-gradient(135deg,#3A2E10,#8A6E14)"></div>' +
+    '<div style="padding:28px">' +
+      '<div style="font-size:12px; font-weight:700; letter-spacing:.12em">📚 BOOKS</div>' +
+      '<div style="font-weight:700; font-size:22px; margin-top:12px">' + title + '</div>' +
+      signature +
+      '<ul style="margin:14px 0 0; padding-left:20px">' + items + '</ul>' +
+      '<div style="margin-top:20px; background:var(--goldsoft); border:1px solid rgba(198,160,46,.27); border-radius:12px; padding:14px; font-size:14px; line-height:1.55; color:#8A6E14; font-weight:600">Official participation alongside the canon. Never rewriting it. Always celebrating it.</div>' +
+      '<div style="margin-top:14px"><button class="btn" style="width:100%" onclick="openBookCategories()">Back to Books</button></div>' +
+    '</div></div>';
+}
+
+function openPodcastCategories(){
+  var existing = document.getElementById("peek");
+  if (existing) existing.remove();
+  var m = document.createElement("div");
+  m.id = "peek"; m.className = "cinema";
+  m.onclick = function(){ m.remove(); };
+  m.innerHTML = '<div class="panel" onclick="event.stopPropagation()">' +
+    '<div style="height:90px; background:linear-gradient(135deg,#1B3A5C,#3E7CB1)"></div>' +
+    '<div style="padding:28px">' +
+      '<div style="font-size:12px; font-weight:700; letter-spacing:.12em">PODCASTS</div>' +
+      '<div style="font-weight:700; font-size:22px; margin-top:12px">Choose a category.</div>' +
+      '<div style="margin-top:18px; display:grid; gap:12px">' +
+        '<button class="card click" style="padding:18px; font:inherit; text-align:left" onclick="openPodcastSection(\'participate\')"><div style="font-weight:700; font-size:16px">Participate</div></button>' +
+        '<button class="card click" style="padding:18px; font:inherit; text-align:left" onclick="openPodcastSection(\'league\')"><div style="font-weight:700; font-size:16px">Join the Official Podcast League</div></button>' +
+        '<button class="card click" style="padding:18px; font:inherit; text-align:left" onclick="openPodcastSection(\'recognition\')"><div style="font-weight:700; font-size:16px">Possible Official Experiences &amp; Recognition</div></button>' +
+      '</div>' +
+      '<div style="margin-top:18px; font-size:13px; line-height:1.5; color:var(--muted); font-weight:600">Official participation alongside the canon. Never rewriting it. Always celebrating it.</div>' +
+      '<div style="margin-top:14px"><button class="btn" style="width:100%" onclick="document.getElementById(\'peek\').remove()">Back to worlds</button></div>' +
+    '</div></div>';
+  document.body.appendChild(m);
+}
+
+function openPodcastSection(section){
+  var title = section === "participate" ? "Participate" : section === "league" ? "Join the Official Podcast League" : "Possible Official Experiences & Recognition";
+  var participate = ["Record your reaction.","Share your biggest takeaway.","Tell your own story inspired by the episode.","Submit questions for future guests.","Recommend future topics.","Join community discussions."];
+  var league = ["Listening Streaks","Weekly Discussions","XP","Badges","Leaderboards"];
+  var recognition = ["Meet the host.","Attend a live recording.","Live virtual Q&A.","Personal video message.","Bonus content.","Featured in the Podcast Community Showcase.","Included in the week’s best listener moments."];
+  var list = section === "participate" ? participate : section === "league" ? league : recognition;
+  var items = list.map(function(p){ return '<li style="font-size:14px; line-height:1.5; margin-top:8px">' + p + '</li>'; }).join("");
+  var signature = section === "recognition" ?
+    '<div style="color:var(--gold); font-size:13px; font-weight:700; margin-top:16px">⭐ Signature Experience</div>' +
+    '<div style="font-weight:700; font-size:18px; line-height:1.35; margin-top:10px">Co-Host the Opening Five Minutes of an Episode.</div>' +
+    '<div style="font-size:14px; color:var(--muted); font-weight:700; margin-top:12px">Or…</div>' +
+    '<ul style="margin:10px 0 0; padding-left:20px"><li style="font-size:14px; line-height:1.5; margin-top:8px">Your question becomes the episode opener.</li><li style="font-size:14px; line-height:1.5; margin-top:8px">Your story is featured.</li><li style="font-size:14px; line-height:1.5; margin-top:8px">Your voice appears in the official episode.</li></ul>' : "";
+  var m = document.getElementById("peek");
+  if (!m) return;
+  m.innerHTML = '<div class="panel" onclick="event.stopPropagation()">' +
+    '<div style="height:90px; background:linear-gradient(135deg,#1B3A5C,#3E7CB1)"></div>' +
+    '<div style="padding:28px">' +
+      '<div style="font-size:12px; font-weight:700; letter-spacing:.12em">PODCASTS</div>' +
+      '<div style="font-weight:700; font-size:22px; margin-top:12px">' + title + '</div>' +
+      signature +
+      '<ul style="margin:14px 0 0; padding-left:20px">' + items + '</ul>' +
+      '<div style="margin-top:20px; background:var(--goldsoft); border:1px solid rgba(198,160,46,.27); border-radius:12px; padding:14px; font-size:14px; line-height:1.55; color:#8A6E14; font-weight:600">Official participation alongside the canon. Never rewriting it. Always celebrating it.</div>' +
+      '<div style="margin-top:14px"><button class="btn" style="width:100%" onclick="openPodcastCategories()">Back to Podcasts</button></div>' +
+    '</div></div>';
+}
+
+function openMusicCategories(){
+  var existing = document.getElementById("peek");
+  if (existing) existing.remove();
+  var m = document.createElement("div");
+  m.id = "peek"; m.className = "cinema";
+  m.onclick = function(){ m.remove(); };
+  m.innerHTML = '<div class="panel" onclick="event.stopPropagation()">' +
+    '<div style="height:90px; background:linear-gradient(135deg,#5C1B4A,#B13E8E)"></div>' +
+    '<div style="padding:28px">' +
+      '<div style="font-size:12px; font-weight:700; letter-spacing:.12em">MUSIC</div>' +
+      '<div style="font-weight:700; font-size:22px; margin-top:12px">Choose a category.</div>' +
+      '<div style="margin-top:18px; display:grid; gap:12px">' +
+        '<button class="card click" style="padding:18px; font:inherit; text-align:left" onclick="openMusicSection(\'participate\')"><div style="font-weight:700; font-size:16px">Participate</div></button>' +
+        '<button class="card click" style="padding:18px; font:inherit; text-align:left" onclick="openMusicSection(\'league\')"><div style="font-weight:700; font-size:16px">Join the Official Music League</div></button>' +
+        '<button class="card click" style="padding:18px; font:inherit; text-align:left" onclick="openMusicSection(\'recognition\')"><div style="font-weight:700; font-size:16px">Possible Official Experiences &amp; Recognition</div></button>' +
+      '</div>' +
+      '<div style="margin-top:18px; font-size:13px; line-height:1.5; color:var(--muted); font-weight:600">Official participation alongside the canon. Never rewriting it. Always celebrating it.</div>' +
+      '<div style="margin-top:14px"><button class="btn" style="width:100%" onclick="document.getElementById(\'peek\').remove()">Back to worlds</button></div>' +
+    '</div></div>';
+  document.body.appendChild(m);
+}
+
+function openMusicSection(section){
+  var title = section === "participate" ? "Participate" : section === "league" ? "Join the Official Music League" : "Possible Official Experiences & Recognition";
+  var participate = ["Show us your dance moves for a chance to appear on the concert Jumbotron.","Sing the chorus in a completely different musical style.","Perform your own version inspired by the song.","Recreate the music video in your own way.","Design official tour merchandise.","Design the next concert poster."];
+  var signatureItems = ["Your dance appears behind them on the concert screens.","Your vocals become part of the audience choir.","Your fan video opens the concert.","Your artwork becomes the official lyric video."];
+  var league = ["Weekly Artist Challenges","Concert Check-Ins","XP","Badges","Leaderboards"];
+  var recognition = ["Appear on the concert Jumbotron.","Meet the artist.","Lunch with the artist.","Backstage passes.","VIP concert tickets.","Featured in the Artist’s Official Fan Showcase.","Included in official concert highlight reels and social compilations."];
+  var list = section === "participate" ? participate : section === "league" ? league : recognition;
+  var items = list.map(function(p){ return '<li style="font-size:14px; line-height:1.5; margin-top:8px">' + p + '</li>'; }).join("");
+  var signature = section === "participate" ?
+    '<div style="color:var(--gold); font-size:13px; font-weight:700; margin-top:16px">⭐ Signature Experience</div>' +
+    '<div style="font-weight:700; font-size:18px; line-height:1.35; margin-top:10px">Perform with Your Favorite Artist.</div>' +
+    '<ul style="margin:12px 0 0; padding-left:20px">' + signatureItems.map(function(p){ return '<li style="font-size:14px; line-height:1.5; margin-top:8px">' + p + '</li>'; }).join("") + '</ul>' : "";
+  var m = document.getElementById("peek");
+  if (!m) return;
+  m.innerHTML = '<div class="panel" onclick="event.stopPropagation()">' +
+    '<div style="height:90px; background:linear-gradient(135deg,#5C1B4A,#B13E8E)"></div>' +
+    '<div style="padding:28px">' +
+      '<div style="font-size:12px; font-weight:700; letter-spacing:.12em">MUSIC</div>' +
+      '<div style="font-weight:700; font-size:22px; margin-top:12px">' + title + '</div>' +
+      signature +
+      '<ul style="margin:14px 0 0; padding-left:20px">' + items + '</ul>' +
+      '<div style="margin-top:20px; background:var(--goldsoft); border:1px solid rgba(198,160,46,.27); border-radius:12px; padding:14px; font-size:14px; line-height:1.55; color:#8A6E14; font-weight:600">Official participation alongside the canon. Never rewriting it. Always celebrating it.</div>' +
+      '<div style="margin-top:14px"><button class="btn" style="width:100%" onclick="openMusicCategories()">Back to Music</button></div>' +
+    '</div></div>';
+}
+
+function openSportsCategories(){
+  var existing = document.getElementById("peek");
+  if (existing) existing.remove();
+  var m = document.createElement("div");
+  m.id = "peek"; m.className = "cinema";
+  m.onclick = function(){ m.remove(); };
+  m.innerHTML = '<div class="panel" onclick="event.stopPropagation()">' +
+    '<div style="height:90px; background:linear-gradient(135deg,#123B2A,#2E7D4F)"></div>' +
+    '<div style="padding:28px">' +
+      '<div style="font-size:12px; font-weight:700; letter-spacing:.12em">SPORTS</div>' +
+      '<div style="font-weight:700; font-size:22px; margin-top:12px">Choose a category.</div>' +
+      '<div style="margin-top:18px; display:grid; gap:12px">' +
+        '<button class="card click" style="padding:18px; font:inherit; text-align:left" onclick="openSportsSection(\'participate\')"><div style="font-weight:700; font-size:16px">Participate</div></button>' +
+        '<button class="card click" style="padding:18px; font:inherit; text-align:left" onclick="openSportsSection(\'league\')"><div style="font-weight:700; font-size:16px">Join the Official Fan League</div></button>' +
+        '<button class="card click" style="padding:18px; font:inherit; text-align:left" onclick="openSportsSection(\'recognition\')"><div style="font-weight:700; font-size:16px">Possible Official Experiences &amp; Recognition</div></button>' +
+      '</div>' +
+      '<div style="margin-top:18px; font-size:13px; line-height:1.5; color:var(--muted); font-weight:600">Official participation alongside the canon. Never rewriting it. Always celebrating it.</div>' +
+      '<div style="margin-top:14px"><button class="btn" style="width:100%" onclick="document.getElementById(\'peek\').remove()">Back to worlds</button></div>' +
+    '</div></div>';
+  document.body.appendChild(m);
+}
+
+function openSportsSection(section){
+  var title = section === "participate" ? "Participate" : section === "league" ? "Join the Official Fan League" : "Possible Official Experiences & Recognition";
+  var participate = ["Show your game-day tradition.","Tailgate Challenge.","Stadium Check-In.","Fan Celebration Challenge.","Team Spirit Challenge."];
+  var league = ["Weekly Challenges","XP","Badges","Leaderboards","Fan MVP"];
+  var recognition = ["Meet your favorite athlete.","Sideline passes.","Locker room tour.","VIP tickets.","Signed jersey.","Featured in the Official Fan Showcase.","Included in weekly fan highlight compilations."];
+  var list = section === "participate" ? participate : section === "league" ? league : recognition;
+  var items = list.map(function(p){ return '<li style="font-size:14px; line-height:1.5; margin-top:8px">' + p + '</li>'; }).join("");
+  var signature = section === "recognition" ?
+    '<div style="color:var(--gold); font-size:13px; font-weight:700; margin-top:16px">⭐ Signature Experience</div>' +
+    '<div style="font-weight:700; font-size:18px; line-height:1.35; margin-top:10px">Become the Official Fan of the Game.</div>' +
+    '<div style="font-size:14px; line-height:1.55; color:var(--muted); margin-top:10px">Your video appears on the team’s social channels.</div>' : "";
+  var m = document.getElementById("peek");
+  if (!m) return;
+  m.innerHTML = '<div class="panel" onclick="event.stopPropagation()">' +
+    '<div style="height:90px; background:linear-gradient(135deg,#123B2A,#2E7D4F)"></div>' +
+    '<div style="padding:28px">' +
+      '<div style="font-size:12px; font-weight:700; letter-spacing:.12em">SPORTS</div>' +
+      '<div style="font-weight:700; font-size:22px; margin-top:12px">' + title + '</div>' +
+      signature +
+      '<ul style="margin:14px 0 0; padding-left:20px">' + items + '</ul>' +
+      '<div style="margin-top:20px; background:var(--goldsoft); border:1px solid rgba(198,160,46,.27); border-radius:12px; padding:14px; font-size:14px; line-height:1.55; color:#8A6E14; font-weight:600">Official participation alongside the canon. Never rewriting it. Always celebrating it.</div>' +
+      '<div style="margin-top:14px"><button class="btn" style="width:100%" onclick="openSportsCategories()">Back to Sports</button></div>' +
+    '</div></div>';
+}
+
+function openFilmCategories(){
+  var existing = document.getElementById("peek");
+  if (existing) existing.remove();
+  var m = document.createElement("div");
+  m.id = "peek"; m.className = "cinema";
+  m.onclick = function(){ m.remove(); };
+  m.innerHTML = '<div class="panel" onclick="event.stopPropagation()">' +
+    '<div style="height:90px; background:linear-gradient(135deg,#0B1220,#2A3A5C)"></div>' +
+    '<div style="padding:28px">' +
+      '<span class="chip"><span class="dot"></span>Film</span>' +
+      '<div style="font-weight:700; font-size:22px; margin-top:12px">Choose a category.</div>' +
+      '<div style="font-size:13px; color:var(--muted); margin-top:4px">Explore official ways to participate, advance and be recognized.</div>' +
+      '<div style="margin-top:18px; display:grid; gap:12px">' +
+        '<button class="card click" style="padding:18px; font:inherit; text-align:left" onclick="openFilmSection(\'Participate\')"><div style="font-weight:700; font-size:16px">Participate</div></button>' +
+        '<button class="card click" style="padding:18px; font:inherit; text-align:left" onclick="openFilmSection(\'Join the Official Story League\')"><div style="font-weight:700; font-size:16px">Join the Official League</div></button>' +
+        '<button class="card click" style="padding:18px; font:inherit; text-align:left" onclick="openFilmSection(\'Possible Official Experiences &amp; Recognition\')"><div style="font-weight:700; font-size:16px">Possible Official Experiences &amp; Recognition</div></button>' +
+      '</div>' +
+      '<div style="margin-top:18px; font-size:13px; line-height:1.5; color:var(--muted); font-weight:600">Official participation alongside the canon. Never rewriting it. Always celebrating it.</div>' +
+      '<div style="margin-top:14px"><button class="btn" style="width:100%" onclick="document.getElementById(\'peek\').remove()">Back to worlds</button></div>' +
+    '</div></div>';
+  document.body.appendChild(m);
+}
+
+function openFilmSection(name){
+  var section = FILM_CATEGORIES[name];
+  var items = section.items.map(function(p){
+    return '<li style="font-size:14px; line-height:1.5; margin-top:8px">' + p + '</li>';
+  }).join("");
+  var m = document.getElementById("peek");
+  if (!m) return;
+  m.innerHTML = '<div class="panel" onclick="event.stopPropagation()">' +
+    '<div style="height:90px; background:linear-gradient(135deg,#0B1220,#2A3A5C)"></div>' +
+    '<div style="padding:28px">' +
+      '<span class="chip"><span class="dot"></span>Film · ' + name + '</span>' +
+      (section.label ? '<div style="color:var(--gold); font-size:13px; font-weight:700; margin-top:16px">' + section.label + '</div>' : '') +
+      '<div style="font-weight:700; font-size:22px; margin-top:12px">' + (section.title || name) + '</div>' +
+      (section.intro ? '<div style="font-size:14px; line-height:1.55; color:var(--muted); margin-top:10px">' + section.intro + '</div>' : '') +
+      '<ul style="margin:16px 0 0; padding-left:20px">' + items + '</ul>' +
+      '<div style="margin-top:20px; background:var(--goldsoft); border:1px solid rgba(198,160,46,.27); border-radius:12px; padding:14px; font-size:14px; line-height:1.55; color:#8A6E14; font-weight:600">Official participation alongside the canon. Never rewriting it. Always celebrating it.</div>' +
+      '<div style="margin-top:14px"><button class="btn" style="width:100%" onclick="openFilmCategories()">Back to Film</button></div>' +
+    '</div></div>';
 }
 
 function scStoryWorld(){
@@ -365,7 +846,7 @@ function scStoryWorld(){
     var badge = id === "gw" ? '<div style="position:absolute; top:12px; left:12px"><span class="chip"><span class="dot"></span>Featured demo</span></div>' : "";
     var cta = id === "gw" ? '<div style="font-size:13px; font-weight:600; margin-top:12px; color:var(--gold)">Enter the full experience &rarr;</div>'
                           : '<div style="font-size:13px; font-weight:600; margin-top:12px; color:var(--muted)">Quick look &rarr;</div>';
-    var act = id === "gw" ? "go(3)" : "openPeek('" + id + "')";
+    var act = id === "gw" ? "go(SCENES.indexOf('entry'))" : id === "ul" ? "openUnleashedCategories()" : "openPeek('" + id + "')";
     return '<div class="card click rise" style="padding:0; overflow:hidden; animation-delay:' + (i*90) + 'ms" onclick="' + act + '">' +
       '<div style="height:130px; background:' + w.grad + '; position:relative">' + badge + '</div>' +
       '<div style="padding:20px">' +
@@ -374,7 +855,7 @@ function scStoryWorld(){
       '</div></div>';
   }).join("");
   el.innerHTML = '<div class="wrap">' +
-    '<div class="eyebrow">Series</div>' +
+    '<div class="eyebrow">Television Series</div>' +
     '<h1>Choose a story world.</h1>' +
     '<p class="sub">Three original worlds, built for participation from day one.</p>' +
     '<div class="grid worlds">' + cards + '</div>' +
@@ -382,26 +863,91 @@ function scStoryWorld(){
   startLive(el);
 }
 
+function openUnleashedCategories(){
+  var existing = document.getElementById("peek");
+  if (existing) existing.remove();
+  var m = document.createElement("div");
+  m.id = "peek"; m.className = "cinema";
+  m.onclick = function(){ m.remove(); };
+  m.innerHTML = '<div class="panel" style="background:' + WORLDS.ul.grad + '; color:#fff" onclick="event.stopPropagation()">' +
+    '<div style="padding:30px 28px">' +
+      '<span class="chip"><span class="dot"></span>Official participation world</span>' +
+      '<div style="font-size:clamp(38px,7vw,54px); font-weight:700; letter-spacing:-.035em; margin-top:18px">Unleashed</div>' +
+      '<div style="font-size:13px; letter-spacing:.12em; text-transform:uppercase; color:rgba(255,255,255,.72); margin-top:4px">Animated Comedy</div>' +
+      '<div style="background:rgba(255,255,255,.97); color:var(--ink); border-radius:16px; padding:18px; margin-top:22px; box-shadow:0 16px 36px rgba(0,0,0,.18)">' +
+        '<div style="font-size:11px; font-weight:700; letter-spacing:.14em; text-transform:uppercase; color:var(--gold)">Creative Team</div>' +
+        '<div style="font-size:16px; font-weight:700; margin-top:8px">Created by Cheryl Fudge</div>' +
+        '<div style="height:1px; background:var(--line); margin:13px 0"></div>' +
+        '<div style="font-size:14px; font-weight:700">Showrunner: Donick Cary</div>' +
+        '<div style="font-size:12.5px; line-height:1.5; color:var(--muted); margin-top:4px">Writer/Producer — The Simpsons, Parks and Recreation, Silicon Valley, and Late Show with David Letterman.</div>' +
+        '<div style="height:1px; background:var(--line); margin:13px 0"></div>' +
+        '<div style="font-size:14px; font-weight:700">Producer: Mike Rosenstein</div>' +
+        '<div style="font-size:12.5px; line-height:1.5; color:var(--muted); margin-top:4px">Founder, Sunset Rose Pictures. Former Head of Digital at Red Hour Films (Ben Stiller). Producer of Genius Weed and Unleashed.</div>' +
+      '</div>' +
+      '<div style="margin-top:18px; display:grid; gap:12px">' +
+        '<button class="card click" style="padding:18px; font:inherit; text-align:left" onclick="openUnleashedSection(\'participate\')"><div style="font-weight:700; font-size:16px">Participate</div></button>' +
+        '<button class="card click" style="padding:18px; font:inherit; text-align:left" onclick="openUnleashedSection(\'league\')"><div style="font-weight:700; font-size:16px">Join the National Mutt League</div></button>' +
+        '<button class="card click" style="padding:18px; font:inherit; text-align:left" onclick="openUnleashedSection(\'recognition\')"><div style="font-weight:700; font-size:16px">Possible Official Experiences &amp; Recognition</div></button>' +
+      '</div>' +
+      '<div style="margin-top:18px; font-size:13px; line-height:1.5; color:rgba(255,255,255,.78); font-weight:600">Official participation alongside the canon. Never rewriting it. Always celebrating it.</div>' +
+      '<div style="margin-top:14px"><button class="btn white" style="width:100%" onclick="document.getElementById(\'peek\').remove()">Back to story worlds</button></div>' +
+    '</div></div>';
+  document.body.appendChild(m);
+}
+
+function openUnleashedSection(section){
+  var title = section === "participate" ? "Participate" : section === "league" ? "Join the National Mutt League" : "Possible Official Experiences & Recognition";
+  var participate = ["Introduce your dog.","Show your dog’s best trick.","Record your dog’s post-game interview.","Design your dog’s official player card.","Celebrate your dog’s game-day routine."];
+  var league = ["Weekly Challenges","XP","Badges","Leaderboards","Dog MVP"];
+  var recognition = ["Featured Dog of the Week.","Meet the creators.","Signed merchandise.","VIP fan events.","Featured in the Official Fan Showcase."];
+  var list = section === "participate" ? participate : section === "league" ? league : recognition;
+  var items = list.map(function(p){ return '<li style="font-size:14px; line-height:1.5; margin-top:8px">' + p + '</li>'; }).join("");
+  var signature = section === "recognition" ?
+    '<div style="color:var(--gold); font-size:13px; font-weight:700; margin-top:16px">⭐ Signature Experience</div>' +
+    '<div style="font-weight:700; font-size:18px; line-height:1.35; margin-top:10px">Your Dog Becomes “Dog of the Week” Inside the National Mutt League.</div>' +
+    '<div style="font-size:14px; line-height:1.55; color:var(--muted); margin-top:10px">Your dog gets an official player card, social media feature, and appears in the community spotlight.</div>' : "";
+  var m = document.getElementById("peek");
+  if (!m) return;
+  m.innerHTML = '<div class="panel" onclick="event.stopPropagation()">' +
+    '<div style="height:90px; background:' + WORLDS.ul.grad + '"></div>' +
+    '<div style="padding:28px">' +
+      '<div style="font-size:12px; font-weight:700; letter-spacing:.12em">🐶 UNLEASHED</div>' +
+      '<div style="font-weight:700; font-size:22px; margin-top:12px">' + title + '</div>' +
+      signature +
+      '<ul style="margin:14px 0 0; padding-left:20px">' + items + '</ul>' +
+      '<div style="margin-top:20px; background:var(--goldsoft); border:1px solid rgba(198,160,46,.27); border-radius:12px; padding:14px; font-size:14px; line-height:1.55; color:#8A6E14; font-weight:600">Official participation alongside the canon. Never rewriting it. Always celebrating it.</div>' +
+      '<div style="margin-top:14px"><button class="btn" style="width:100%" onclick="openUnleashedCategories()">Back to Unleashed</button></div>' +
+    '</div></div>';
+}
+
 function openPeek(id){
   var w = WORLDS[id];
+  if (id === "ul"){ openUnleashedCategories(); return; }
   var items = PEEK[id].map(function(p){
-    return '<div style="font-size:14px; line-height:1.5; background:var(--canvas); border-radius:12px; padding:12px 14px; border:1px solid var(--line)">' + p + '</div>';
+    return '<div style="font-size:14px; line-height:1.5; color:var(--ink); background:rgba(255,255,255,.97); border-radius:12px; padding:14px; box-shadow:0 8px 22px rgba(0,0,0,.12)">' + p + '</div>';
   }).join("");
   var m = document.createElement("div");
   m.id = "peek"; m.className = "cinema";
   m.onclick = function(){ m.remove(); };
-  m.innerHTML = '<div class="panel" onclick="event.stopPropagation()">' +
-    '<div style="height:90px; background:' + w.grad + '"></div>' +
-    '<div style="padding:28px">' +
-      '<span class="chip"><span class="dot"></span>Quick preview</span>' +
-      '<div style="font-weight:700; font-size:20px; margin-top:12px">' + w.name + '</div>' +
-      '<div style="font-size:13px; color:var(--muted); margin-top:2px">Every world runs on the same engine — with experiences native to its own characters and fans.</div>' +
+  m.innerHTML = '<div class="panel" style="background:' + w.grad + '; color:#fff" onclick="event.stopPropagation()">' +
+    '<div style="padding:30px 28px">' +
+      '<span class="chip"><span class="dot"></span>Official participation world</span>' +
+      '<div style="font-size:clamp(36px,7vw,52px); font-weight:700; letter-spacing:-.035em; margin-top:18px">' + w.name + '</div>' +
+      '<div style="font-size:13px; letter-spacing:.12em; text-transform:uppercase; color:rgba(255,255,255,.72); margin-top:4px">' + w.genre + '</div>' +
+      '<div style="background:rgba(255,255,255,.97); color:var(--ink); border-radius:16px; padding:18px; margin-top:22px; box-shadow:0 16px 36px rgba(0,0,0,.18)">' +
+        '<div style="font-size:11px; font-weight:700; letter-spacing:.14em; text-transform:uppercase; color:var(--gold)">Creative Team</div>' +
+        '<div style="font-size:16px; font-weight:700; margin-top:10px">Created by Cheryl Fudge</div>' +
+        '<div style="height:1px; background:var(--line); margin:13px 0"></div>' +
+        '<div style="font-size:16px; font-weight:700">Co-Created by Lynda Levy</div>' +
+      '</div>' +
+      '<div style="font-size:13px; color:rgba(255,255,255,.75); margin-top:16px">Experience previews</div>' +
       '<div style="margin-top:16px; display:grid; gap:10px">' + items + '</div>' +
-      '<div style="margin-top:20px"><button class="btn" style="width:100%" onclick="document.getElementById(\'peek\').remove(); go(3)">Take the full walkthrough &rarr;</button></div>' +
-      '<div style="margin-top:12px; text-align:center"><button onclick="document.getElementById(\'peek\').remove()" style="font:inherit; font-size:13px; font-weight:600; color:var(--muted); background:none; border:none; cursor:pointer">Back to story worlds</button></div>' +
+      '<div style="margin-top:18px; font-size:13px; line-height:1.5; color:rgba(255,255,255,.78); font-weight:600">Official participation alongside the canon. Never rewriting it. Always celebrating it.</div>' +
+      '<div style="margin-top:20px"><button class="btn white" style="width:100%" onclick="document.getElementById(\'peek\').remove()">Back to story worlds</button></div>' +
     '</div></div>';
   document.body.appendChild(m);
 }
+
 
 function scEntry(){
   var el = document.getElementById("scene");
@@ -418,6 +964,16 @@ function scEntry(){
         '<div style="font-size:12.5px; color:var(--muted)">Showrunner · The Simpsons, Silicon Valley, Parks &amp; Rec</div></div>' +
       '</div>' +
       '<p style="font-size:16px; line-height:1.6; margin-top:16px">\u201CWelcome to Genius Weed. The café doors are open — come play inside our world, show us your superpower, and win. We can\u2019t wait to see what you make.\u201D</p>' +
+    '</div>' +
+    '<div class="rise" style="background:rgba(255,255,255,.96); border-radius:20px; padding:22px 24px; margin-top:18px; text-align:left; box-shadow:0 20px 50px rgba(0,0,0,.2); animation-delay:520ms">' +
+      '<div style="font-size:11px; font-weight:700; letter-spacing:.14em; text-transform:uppercase; color:var(--gold)">Creative Team</div>' +
+      '<div style="font-size:18px; font-weight:700; margin-top:8px">Created by Cheryl Fudge</div>' +
+      '<div style="height:1px; background:var(--line); margin:16px 0"></div>' +
+      '<div style="font-size:15px; font-weight:700">Showrunner: Donick Cary</div>' +
+      '<div style="font-size:13px; line-height:1.5; color:var(--muted); margin-top:4px">Writer/Producer — The Simpsons, Parks and Recreation, Silicon Valley, and Late Show with David Letterman.</div>' +
+      '<div style="height:1px; background:var(--line); margin:16px 0"></div>' +
+      '<div style="font-size:15px; font-weight:700">Producer: Mike Rosenstein</div>' +
+      '<div style="font-size:13px; line-height:1.5; color:var(--muted); margin-top:4px">Founder, Sunset Rose Pictures. Former Head of Digital at Red Hour Films (Ben Stiller). Producer of Genius Weed and Unleashed.</div>' +
     '</div>' +
     '<div class="rise" style="margin-top:22px; animation-delay:600ms">' +
       '<button class="btn white" style="padding:11px 24px; font-size:14.5px" onclick="followDemo(this)">＋ Follow Genius Weed</button>' +
@@ -919,6 +1475,23 @@ function render(){
   else if (id === "end") scEnd();
   el.classList.remove("scenein"); void el.offsetWidth; el.classList.add("scenein");
 }
+var OFFICIAL_STATEMENT = "Official participation alongside the canon. Never rewriting it. Always celebrating it.";
+function centerOfficialStatements(root){
+  if (!root || root.nodeType !== 1) return;
+  var nodes = [];
+  if (root.matches && root.matches("div")) nodes.push(root);
+  if (root.querySelectorAll) nodes = nodes.concat(Array.prototype.slice.call(root.querySelectorAll("div")));
+  nodes.forEach(function(node){
+    if (node.textContent.trim() === OFFICIAL_STATEMENT) node.style.textAlign = "center";
+  });
+}
+var officialStatementObserver = new MutationObserver(function(mutations){
+  mutations.forEach(function(mutation){
+    Array.prototype.forEach.call(mutation.addedNodes, centerOfficialStatements);
+  });
+});
+officialStatementObserver.observe(document.body, {childList:true, subtree:true});
+centerOfficialStatements(document.body);
 var fb = document.getElementById("fallback");
 if (fb) fb.remove();
 render();
