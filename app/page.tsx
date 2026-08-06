@@ -3,7 +3,8 @@
 import { useState } from "react";
 
 export default function Home() {
-  const [unlocked, setUnlocked] = useState(false);
+  const isDev = import.meta.env.DEV;
+  const [unlocked, setUnlocked] = useState(isDev);
   const [password, setPassword] = useState("");
   const [error, setError] = useState(false);
 
@@ -11,7 +12,9 @@ export default function Home() {
     return (
       <main className="prototype-shell">
         <iframe
-          src="./ewey-reference.html?v=fashion-3"
+          src={isDev
+            ? "./ewey-reference.html?v=dev-direct&start=worldtype"
+            : "./ewey-reference.html?v=fashion-3"}
           title="EWEy interactive prototype"
           allow="fullscreen"
         />

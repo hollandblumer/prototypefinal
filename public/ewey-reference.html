@@ -240,7 +240,8 @@ var SCENES = ["cold","worldtype","storyworld","entry","power","experience","crea
 var DARK = {cold:1, mosaic:1, end:1, entry:1};
 
 // ————— State —————
-var S = {i:0, power:"perform", prompt:PROMPTS.perform[0], timers:[]};
+var startOnWorlds = new URLSearchParams(window.location.search).get("start") === "worldtype";
+var S = {i:startOnWorlds ? 1 : 0, power:"perform", prompt:PROMPTS.perform[0], timers:[]};
 
 function clearTimers(){ S.timers.forEach(clearTimeout); S.timers = []; }
 function later(fn, ms){ S.timers.push(setTimeout(fn, ms)); }
