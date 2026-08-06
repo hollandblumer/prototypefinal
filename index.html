@@ -61,7 +61,8 @@
 
   /* Grids */
   .grid{display:grid; gap:12px; margin:40px auto 0;}
-  .grid.cats{grid-template-columns:repeat(auto-fit,minmax(140px,1fr)); max-width:820px;}
+  .grid.cats{display:flex; flex-wrap:wrap; justify-content:center; max-width:820px;}
+  .grid.cats > .card{flex:1 1 140px; max-width:154px;}
   .grid.worlds{grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); gap:18px; max-width:880px;}
   .grid.powers{grid-template-columns:repeat(auto-fit,minmax(200px,1fr)); gap:16px; max-width:760px;}
   .grid.shows{grid-template-columns:repeat(auto-fit,minmax(160px,1fr)); max-width:760px; margin-top:38px;}
@@ -191,8 +192,8 @@ var WORLDS = {
   ul:{name:"Unleashed", genre:"Animated Comedy", grad:"linear-gradient(135deg,#7A2E12 0%,#D96C2C 55%,#F2B267 100%)"},
   lf:{name:"The Last Future", genre:"Sci-Fi Mystery", grad:"linear-gradient(135deg,#0D1033 0%,#3A2E8C 55%,#7C6CD9 100%)"}
 };
-var CATEGORIES = [["📺","Series"],["👗","Fashion"],["🎬","Film"],["📚","Books"],["🎵","Music"],["🏈","Sports"],
-  ["🎙️","Podcasts"],["📰","Journalism"],["🎥","Documentaries"],["🎮","Games"],["🎭","Live Events"]];
+var CATEGORIES = [["📺","Series"],["🎬","Film"],["📚","Books"],["🎵","Music"],["🏈","Sports"],
+  ["🎙️","Podcasts"],["👗","Fashion"],["📰","Journalism"],["🎥","Documentaries"],["🎮","Games"],["🎭","Live Events"]];
 var SUPERPOWERS = [
   {id:"perform", icon:"🎭", name:"Perform", sub:"One-minute videos · acting · comedy · improv"},
   {id:"design", icon:"🎨", name:"Design", sub:"Posters · merch · graphics"},
