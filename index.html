@@ -237,12 +237,12 @@ var CATPEEK = {
   "Live Events":["Win front-row seats and backstage passes for the next stop on the tour.","Vote the encore setlist into existence — then watch it happen live.","Record your section's fan chant — the best one plays in the arena.","Design this tour's limited merch drop — the winning design sells at the venue, credited."]
 };
 var MOSAIC_ICONS = ["🎭","🎨","✍️","📷","🎬","🎤","😂","🎵","🐶","☕","🛸","📝"];
-var SCENES = ["cold","worldtype","storyworld","entry","power","experience","create","mosaic","ai","continues","win","local","beyond","creator","end"];
+// Development shortcut: keep the opening "Enter EWEy" world sequence out of the route.
+var SCENES = ["worldtype","storyworld","entry","power","experience","create","mosaic","ai","continues","win","local","beyond","creator","end"];
 var DARK = {cold:1, mosaic:1, end:1, entry:1};
 
 // ————— State —————
-// Development shortcut: open directly on the world-category chooser.
-var S = {i:1, power:"perform", prompt:PROMPTS.perform[0], timers:[]};
+var S = {i:0, power:"perform", prompt:PROMPTS.perform[0], timers:[]};
 
 function clearTimers(){ S.timers.forEach(clearTimeout); S.timers = []; }
 function later(fn, ms){ S.timers.push(setTimeout(fn, ms)); }
