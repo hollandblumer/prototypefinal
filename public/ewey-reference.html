@@ -1,0 +1,924 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>EWEy — The Participation Layer for All IP</title>
+<style>
+  :root{
+    --ink:#0B1220; --canvas:#FAFAF8; --card:#FFFFFF; --gold:#C6A02E; --goldsoft:#F4EAC9;
+    --muted:#7C8496; --line:rgba(11,18,32,.08); --dark:#060A14;
+  }
+  *{box-sizing:border-box; margin:0; padding:0; -webkit-tap-highlight-color:transparent;}
+  html,body{height:100%;}
+  body{
+    font-family:-apple-system,BlinkMacSystemFont,"SF Pro Display","Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    background:var(--canvas); color:var(--ink); overflow:hidden;
+    -webkit-font-smoothing:antialiased; text-rendering:optimizeLegibility;
+  }
+  #stage{position:fixed; inset:0; overflow:hidden;}
+  .scene{position:absolute; inset:0; overflow-y:auto; -webkit-overflow-scrolling:touch;}
+  .scene::-webkit-scrollbar{width:0;}
+  .wrap{max-width:860px; margin:0 auto; padding:96px 24px 90px; text-align:center;}
+  .wrap.wide{max-width:900px;}
+
+  /* Type */
+  .eyebrow{font-size:12px; letter-spacing:.18em; text-transform:uppercase; font-weight:600; color:var(--muted); margin-bottom:16px;}
+  .eyebrow.gold{color:var(--gold);}
+  h1{font-size:clamp(30px,6vw,52px); font-weight:700; letter-spacing:-.03em; line-height:1.08;}
+  h1.md{font-size:clamp(28px,5.4vw,44px);}
+  .sub{font-size:clamp(15px,2.2vw,18px); line-height:1.55; color:var(--muted); max-width:560px; margin:16px auto 0;}
+
+  /* Buttons */
+  .btn{
+    font:inherit; font-size:16px; font-weight:600; letter-spacing:-.01em; padding:14px 32px;
+    border-radius:999px; border:1px solid transparent; background:var(--ink); color:#fff; cursor:pointer;
+    box-shadow:0 2px 10px rgba(11,18,32,.08); transition:all .25s cubic-bezier(.2,.8,.2,1);
+  }
+  .btn:hover{transform:scale(1.035); box-shadow:0 10px 30px rgba(11,18,32,.18);}
+  .btn:active{transform:scale(.98);}
+  .btn:focus-visible{outline:2px solid var(--gold); outline-offset:3px;}
+  .btn.white{background:#fff; color:var(--ink);}
+  .btn.gold{background:var(--gold); color:#fff;}
+  .btn.green{background:#2E7D4F; color:#fff;}
+  .btn.big{width:100%; padding:17px 32px; font-size:17px;}
+
+  /* Cards */
+  .card{
+    background:var(--card); border-radius:20px; padding:24px; border:1px solid var(--line);
+    box-shadow:0 2px 12px rgba(11,18,32,.05); transition:all .3s cubic-bezier(.2,.8,.2,1); text-align:left;
+  }
+  .card.click{cursor:pointer;}
+  .card.click:hover{transform:translateY(-4px) scale(1.01); box-shadow:0 18px 44px rgba(11,18,32,.12);}
+  .card.center{text-align:center;}
+
+  .chip{
+    display:inline-flex; align-items:center; gap:6px; font-size:12px; font-weight:600;
+    letter-spacing:.06em; text-transform:uppercase; color:#8A6E14; background:var(--goldsoft);
+    border:1px solid rgba(198,160,46,.27); border-radius:999px; padding:6px 14px;
+  }
+  .chip .dot{width:6px; height:6px; border-radius:99px; background:var(--gold);}
+
+  /* Grids */
+  .grid{display:grid; gap:12px; margin:40px auto 0;}
+  .grid.cats{grid-template-columns:repeat(auto-fit,minmax(140px,1fr)); max-width:820px;}
+  .grid.worlds{grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); gap:18px; max-width:880px;}
+  .grid.powers{grid-template-columns:repeat(auto-fit,minmax(200px,1fr)); gap:16px; max-width:760px;}
+  .grid.shows{grid-template-columns:repeat(auto-fit,minmax(160px,1fr)); max-width:760px; margin-top:38px;}
+  .grid.creator{grid-template-columns:repeat(auto-fit,minmax(290px,1fr)); gap:18px; max-width:820px; margin-top:36px;}
+  .stack{display:grid; gap:14px; margin:36px auto 0; max-width:640px;}
+
+  /* Chrome */
+  #chrome{position:absolute; top:0; left:0; right:0; z-index:40; display:flex; align-items:center;
+    justify-content:space-between; padding:18px 22px; pointer-events:none;}
+  #backbtn{pointer-events:auto; font:inherit; font-size:14px; font-weight:600; border:none; cursor:pointer;
+    background:rgba(11,18,32,.06); color:var(--ink); border-radius:999px; padding:8px 16px;
+    backdrop-filter:blur(10px); -webkit-backdrop-filter:blur(10px);}
+  #chrome.on-dark #backbtn{background:rgba(255,255,255,.12); color:#fff;}
+  #logo{font-weight:700; font-size:17px; letter-spacing:-.02em; color:var(--ink);}
+  #chrome.on-dark #logo{color:#fff;}
+  #logo b{color:var(--gold); font-weight:700;}
+  #spacer{width:74px;}
+  #dots{position:absolute; bottom:16px; left:50%; transform:translateX(-50%); display:flex; gap:6px; z-index:40;}
+  #dots i{display:block; width:6px; height:6px; border-radius:99px; background:rgba(11,18,32,.14); transition:all .4s;}
+  #dots.on-dark i{background:rgba(255,255,255,.25);}
+  #dots i.now{width:20px; background:var(--gold);}
+
+  /* Animations */
+  @keyframes riseIn{from{opacity:0; transform:translateY(18px);} to{opacity:1; transform:none;}}
+  @keyframes cinemaIn{from{opacity:0; transform:translateY(10px) scale(.985);} to{opacity:1; transform:none;}}
+  @keyframes tileIn{from{opacity:0; transform:scale(.6);} to{opacity:1; transform:scale(1);}}
+  @keyframes pulseGlow{0%,100%{transform:scale(1);} 50%{transform:scale(1.08);}}
+  @keyframes threadGrow{from{transform:scaleY(0);} to{transform:scaleY(1);}}
+  .rise{animation:riseIn .7s cubic-bezier(.2,.8,.2,1) both;}
+  .cinema{animation:cinemaIn 1.1s cubic-bezier(.2,.8,.2,1) both;}
+  .tile{animation:tileIn .55s cubic-bezier(.2,.8,.2,1) both;}
+  .pulse{animation:pulseGlow 1.6s ease-in-out infinite;}
+  .thread{transform-origin:top; animation:threadGrow 1.6s cubic-bezier(.2,.8,.2,1) both .4s;}
+  @media (prefers-reduced-motion:reduce){.rise,.cinema,.tile,.pulse,.thread,.scenein,.livetoast,.fanvid .bar,.btn.gold,#ambient i{animation:none!important;} #scene{transition:none!important;}}
+
+  /* Scene transitions */
+  #scene{transition:opacity .24s ease, transform .24s ease, filter .24s ease;}
+  #scene.leaving{opacity:0; transform:scale(1.03); filter:blur(3px);}
+  .scenein{animation:sceneIn .5s cubic-bezier(.2,.8,.2,1);}
+  @keyframes sceneIn{from{opacity:0; transform:scale(.985);} to{opacity:1; transform:none;}}
+
+  /* Ambient life */
+  #ambient{position:absolute; inset:0; pointer-events:none; overflow:hidden;}
+  #ambient i{position:absolute; display:block; border-radius:50%;}
+  @keyframes drifta{0%,100%{transform:translate(0,0);} 50%{transform:translate(42px,-30px);}}
+  @keyframes driftb{0%,100%{transform:translate(0,0);} 50%{transform:translate(-48px,38px);}}
+
+  /* Live activity toasts */
+  .livetoast{position:absolute; top:62px; right:14px; z-index:30; background:rgba(255,255,255,.93); border:1px solid var(--line); box-shadow:0 6px 20px rgba(11,18,32,.1); border-radius:999px; padding:8px 14px; font-size:12.5px; font-weight:600; animation:toastLife 2.8s ease both; backdrop-filter:blur(8px); -webkit-backdrop-filter:blur(8px);}
+  .livetoast.dark{background:rgba(255,255,255,.12); color:#fff; border-color:rgba(255,255,255,.2); box-shadow:none;}
+  @keyframes toastLife{0%{opacity:0; transform:translateY(-8px);} 12%{opacity:1; transform:none;} 80%{opacity:1;} 100%{opacity:0; transform:translateY(-6px);}}
+
+  /* Fan videos */
+  .fanvid{aspect-ratio:9/16; border-radius:14px; position:relative; overflow:hidden; box-shadow:0 8px 24px rgba(11,18,32,.15);}
+  .fanvid .play{position:absolute; inset:0; display:flex; align-items:center; justify-content:center; font-size:24px; color:#fff; text-shadow:0 2px 10px rgba(0,0,0,.4);}
+  .fanvid .cap{position:absolute; left:8px; right:8px; bottom:11px; color:#fff; font-size:10.5px; font-weight:600; text-shadow:0 1px 6px rgba(0,0,0,.55); text-align:left;}
+  .fanvid .bar{position:absolute; left:0; bottom:0; height:3px; background:var(--gold); animation:vidbar 4s linear infinite;}
+  @keyframes vidbar{from{width:0;} to{width:100%;}}
+
+  /* Gold breathes */
+  .btn.gold{animation:goldbreathe 3s ease-in-out infinite;}
+  @keyframes goldbreathe{0%,100%{box-shadow:0 2px 10px rgba(198,160,46,.25);} 50%{box-shadow:0 6px 26px rgba(198,160,46,.45);}}
+
+  /* Dark scenes */
+  .darkscene{background:var(--dark); display:flex; align-items:center; justify-content:center; text-align:center; padding:28px;}
+  .worldscene{display:flex; align-items:center; justify-content:center; padding:24px;}
+
+  /* Mosaic */
+  #mosaicgrid{display:grid; grid-template-columns:repeat(13,1fr); gap:6px; width:125%;
+    transition:all 1.4s cubic-bezier(.2,.8,.2,1);}
+  #mosaicgrid.zoom{width:62%; max-width:700px; opacity:.4; filter:blur(1px);}
+  #mosaicgrid .mtile{aspect-ratio:1; border-radius:8px; display:flex; align-items:center;
+    justify-content:center; font-size:clamp(10px,1.6vw,18px);}
+
+  /* Peek modal */
+  #peek{position:fixed; inset:0; background:rgba(6,10,20,.55); backdrop-filter:blur(8px);
+    -webkit-backdrop-filter:blur(8px); display:flex; align-items:center; justify-content:center; z-index:50; padding:24px;}
+  #peek .panel{background:#fff; border-radius:24px; max-width:440px; width:100%; overflow:hidden;
+    box-shadow:0 30px 80px rgba(0,0,0,.3); text-align:left;}
+
+  .ai-row{display:flex; justify-content:space-between; align-items:center; padding:14px 0;
+    border-bottom:1px solid var(--line); opacity:.15; transition:opacity .5s;}
+  .ai-row.show{opacity:1;}
+  .ai-row:last-of-type{border-bottom:none;}
+  .ai-verdict{margin-top:18px; background:var(--canvas); border:1px solid var(--line); border-radius:14px;
+    padding:16px 18px; transition:all .6s; opacity:.25;}
+  .ai-verdict.show{background:var(--goldsoft); border-color:rgba(198,160,46,.33); opacity:1;}
+
+  .typechip{font-size:12.5px; font-weight:600; padding:6px 14px; border-radius:999px;
+    border:1px solid var(--line); color:var(--muted);}
+  .typechip.on{background:var(--ink); color:#fff; border-color:var(--ink);}
+
+  .catpill{color:#fff; font-size:14.5px; font-weight:600; padding:9px 18px; border-radius:999px;
+    border:1px solid rgba(255,255,255,.22);}
+</style>
+</head>
+<body>
+<div id="fallback" style="position:fixed; inset:0; background:#060A14; display:flex; align-items:center; justify-content:center; text-align:center; padding:32px; z-index:100;">
+  <div>
+    <div style="color:#fff; font-size:64px; font-weight:700; letter-spacing:-.04em;">EWE<span style="color:#C6A02E">y</span></div>
+    <div style="color:rgba(255,255,255,.6); font-size:14px; letter-spacing:.14em; text-transform:uppercase; margin-top:10px; font-weight:500;">The Participation Layer for All IP</div>
+    <div style="color:#fff; font-size:19px; font-weight:600; margin-top:44px; line-height:1.5; max-width:420px;">This is an interactive prototype.</div>
+    <div style="color:rgba(255,255,255,.65); font-size:15px; margin-top:12px; line-height:1.6; max-width:420px;">To experience it, open this file in your web browser — on a phone, tap the attachment and choose Safari or Chrome. On a computer, download it and double&#8209;click.</div>
+    <div style="color:rgba(255,255,255,.4); font-size:12.5px; margin-top:36px;">Takes about 3 minutes · Best with sound off, curiosity on</div>
+  </div>
+</div>
+<div id="stage">
+  <div id="ambient">
+    <i style="width:420px; height:420px; left:-8%; top:-10%; background:radial-gradient(circle, rgba(198,160,46,.15), transparent 70%); animation:drifta 19s ease-in-out infinite"></i>
+    <i style="width:360px; height:360px; right:-6%; top:22%; background:radial-gradient(circle, rgba(42,58,92,.11), transparent 70%); animation:driftb 23s ease-in-out infinite"></i>
+    <i style="width:300px; height:300px; left:12%; bottom:-8%; background:radial-gradient(circle, rgba(198,160,46,.12), transparent 70%); animation:driftb 17s ease-in-out infinite"></i>
+    <i style="width:260px; height:260px; right:18%; bottom:6%; background:radial-gradient(circle, rgba(42,58,92,.09), transparent 70%); animation:drifta 26s ease-in-out infinite"></i>
+  </div>
+  <div id="chrome" style="display:none">
+    <button id="backbtn" onclick="goBack()">&larr; Back</button>
+    <div id="logo">EWE<b>y</b></div>
+    <div id="spacer"></div>
+  </div>
+  <div id="scene" class="scene"></div>
+  <div id="dots" style="display:none"></div>
+</div>
+
+<script>
+// ————— Data —————
+var WORLDS = {
+  gw:{name:"Genius Weed", genre:"Comedy", grad:"linear-gradient(135deg,#123B2A 0%,#2E7D4F 55%,#7FB069 100%)"},
+  ul:{name:"Unleashed", genre:"Animated Comedy", grad:"linear-gradient(135deg,#7A2E12 0%,#D96C2C 55%,#F2B267 100%)"},
+  lf:{name:"The Last Future", genre:"Sci-Fi Mystery", grad:"linear-gradient(135deg,#0D1033 0%,#3A2E8C 55%,#7C6CD9 100%)"}
+};
+var CATEGORIES = [["📺","Series"],["🎬","Film"],["📚","Books"],["🎵","Music"],["🏈","Sports"],
+  ["🎙️","Podcasts"],["📰","Journalism"],["🎥","Documentaries"],["🎮","Games"],["🎭","Live Events"]];
+var SUPERPOWERS = [
+  {id:"perform", icon:"🎭", name:"Perform", sub:"One-minute videos · acting · comedy · improv"},
+  {id:"design", icon:"🎨", name:"Design", sub:"Posters · merch · graphics"},
+  {id:"write", icon:"✍️", name:"Write", sub:"Reviews · scripts · worlds"}
+];
+var PROMPTS = {
+  perform:[
+    {title:"The Time Sabatini's Cousin…", body:"Film you and your friends at a table, cracking up about the time Sabatini's cousin did… fill in the blank. Funniest table gets featured.", tag:"This week's featured experience"},
+    {title:"Voice the Delivery Driver", body:"Be the voice of the delivery driver — never seen, always heard. Record his monologue about everything happening in town. He knows everything. The winning voice gets featured."},
+    {title:"Become the Town Gossip", body:"One minute, straight to camera: everything you've \u201Cheard\u201D about what happened at the café this week."},
+    {title:"Featured Stand-Up", body:"It's comedy night at the café and you're the headliner. Film your tightest 60 seconds — the funniest set makes the marquee."},
+    {title:"Comedy Karaoke", body:"Sing your jokes to the tune of your favorite song. If the regulars sing along, you win."},
+    {title:"The Café Shark Tank", body:"Act out your pitch for the café's next ridiculous invention, Shark Tank-style. The regulars are the sharks — and they're brutal."}
+  ],
+  design:[
+    {title:"The Café Mug Everyone Wants", body:"Design the limited-edition Genius Weed café mug. The winning design becomes official merchandise — with your name on the tag.", tag:"This week's featured experience"},
+    {title:"This Week's Menu Special", body:"Design the café's menu board for the week. Make the regulars argue about it."},
+    {title:"The Band's Concert Poster", body:"The café's house band finally booked a real gig. Design the poster they'd tape to the window."}
+  ],
+  write:[
+    {title:"Review of the Week", body:"Write the funniest one-star or five-star review of the café. ⭐☆☆☆☆ \u201CMy dog left happier than I did.\u201D Or film your one-minute review — the best get featured.", tag:"This week's featured experience"},
+    {title:"Café Chalkboard of the Day", body:"Every morning, someone changes the café chalkboard. \u201CToday\u2019s vibe: legally distinct from yesterday\u2019s.\u201D What does it say today? Write it — then film the morning reveal."},
+    {title:"Today's Special", body:"Name today's ridiculous menu item — \u201CThe Emotional Support Espresso\u201D — and write its description, or film yourself pitching it to the regulars."},
+    {title:"The Open Mic Monologue", body:"Write a comedy monologue for someone else to perform on the café's stage. The best one gets performed — and you both get credit."}
+  ]
+};
+var PEEK = {
+  ul:["Film you and your friends cracking up about the main character's cousin — funniest crew gets featured.","What Is Your Dog Really Thinking? Dub the inner monologue.","America's Funniest Mutt — share your dog's finest moment."],
+  lf:["Hidden Clues Hunt — find what unlocks the universe.","Design a Parallel Civilization — culture, tech, language.","Intercepted Transmission — you've decoded something. What does it say?"]
+};
+var CATPEEK = {
+  "Film":["Win a set visit — watch the sequel being filmed.","Remake the trailer shot-for-shot with your crew — the best one plays at the premiere.","Film the missing scene from another character's perspective."],
+  "Books":["Win a weekend where the book takes place — tour the real restaurants, shops, and beaches from the story.","Win a video call with the author — talk favorite characters and hear what's coming next.","Join the official fan extras compilation — credited, featured, and earning points every time it plays."],
+  "Music":["Win lunch with your favorite artist — top fan creation gets a seat at the table.","Create a chorus with your favorite artist.","Remake their song in a completely different genre."],
+  "Sports":["Win game-day tickets — call the winning play from the broadcast booth.","You're the sideline reporter — interview the MVP.","Design the limited-edition fan jersey."],
+  "Podcasts":["Win a call-in — join the hosts live on next week's episode.","Record the voicemail the hosts read on air.","Continue the conversation — respond to this week's episode with your best idea. The best make the official \u201CIdeas That Could Change the World\u201D compilation.","Win tickets to the live show — and a meet-and-greet with the hosts."],
+  "Journalism":["Who's the unsung hero in your hometown? Tell their story — editors verify, and the best run nationally with your byline.","Submit the photo behind the headline — published shots get credited and earn points.","Win a day in the newsroom — pitch your story to real editors."],
+  "Documentaries":["Tell us your theory — and why. The most compelling theories get featured in the official companion episode.","Ask the filmmakers — top-voted questions get answered on camera.","Who changed your life? Share your one-minute story — selected stories join the companion film, credited.","Win a seat at the premiere — and meet the filmmakers."],
+  "Games":["Win early access — be one of the first players inside the next expansion.","Design a side quest — the winning quest ships in the next update, with your name in the credits.","Hide the easter egg every player will hunt for."],
+  "Live Events":["Win front-row seats and backstage passes for the next stop on the tour.","Vote the encore setlist into existence — then watch it happen live.","Record your section's fan chant — the best one plays in the arena.","Design this tour's limited merch drop — the winning design sells at the venue, credited."]
+};
+var MOSAIC_ICONS = ["🎭","🎨","✍️","📷","🎬","🎤","😂","🎵","🐶","☕","🛸","📝"];
+var SCENES = ["cold","worldtype","storyworld","entry","power","experience","create","mosaic","ai","continues","win","local","beyond","creator","end"];
+var DARK = {cold:1, mosaic:1, end:1, entry:1};
+
+// ————— State —————
+var S = {i:0, power:"perform", prompt:PROMPTS.perform[0], timers:[]};
+
+function clearTimers(){ S.timers.forEach(clearTimeout); S.timers = []; }
+function later(fn, ms){ S.timers.push(setTimeout(fn, ms)); }
+function go(i){
+  clearTimers();
+  var t = Math.max(0, Math.min(i, SCENES.length-1));
+  var el = document.getElementById("scene");
+  if (t === S.i || !el){ S.i = t; render(); return; }
+  S.i = t;
+  el.classList.add("leaving");
+  S.timers.push(setTimeout(function(){ el.classList.remove("leaving"); render(); }, 230));
+}
+var LIVE = ["🔔 Donick just announced next week\u2019s challenge","🎭 Maya D. just earned 250 points","🎟️ Priya just won premiere tickets","⭐ New featured pick in Unleashed","🎥 2,384 fan videos posted today","😂 Sabatini\u2019s cousin is trending again","❤️ Jayden\u2019s café review just hit 10K","💰 Weekly cash challenge is live","🐶 A golden retriever just went viral","🏆 Weekly winners announced in 2 hours","🛍️ A fan mug design just became official merch","✨ Sofia\u2019s design advanced to review","📍 Pop-up café announced in Austin"];
+function startLive(el, n, dark){
+  n = n || 0;
+  later(function(){
+    var t = document.createElement("div");
+    t.className = "livetoast" + (dark ? " dark" : "");
+    t.textContent = LIVE[n % LIVE.length];
+    el.appendChild(t);
+    later(function(){ if (t.parentNode) t.remove(); }, 2900);
+    startLive(el, n + 1, dark);
+  }, n === 0 ? 700 : 3100);
+}
+function next(){ go(S.i+1); }
+function goBack(){ go(S.i-1); }
+function pickPower(p){ S.power = p; S.prompt = PROMPTS[p][0]; next(); }
+function pickPrompt(idx){ S.prompt = PROMPTS[S.power][idx]; next(); }
+function restart(){ S.power = "perform"; S.prompt = PROMPTS.perform[0]; go(0); }
+function esc(s){ return s.replace(/&/g,"&amp;").replace(/</g,"&lt;"); }
+
+// ————— Chrome —————
+function renderChrome(){
+  var id = SCENES[S.i];
+  var chrome = document.getElementById("chrome");
+  var dots = document.getElementById("dots");
+  if (id === "cold"){ chrome.style.display = "none"; dots.style.display = "none"; return; }
+  chrome.style.display = "flex";
+  chrome.className = DARK[id] ? "on-dark" : "";
+  if (id === "end"){ dots.style.display = "none"; }
+  else {
+    dots.style.display = "flex";
+    dots.className = DARK[id] ? "on-dark" : "";
+    var h = "";
+    for (var k = 1; k < SCENES.length-1; k++) h += '<i class="' + (k === S.i ? "now" : "") + '"></i>';
+    dots.innerHTML = h;
+  }
+}
+
+// ————— Scene templates —————
+function scCold(){
+  var el = document.getElementById("scene");
+  el.className = "scene darkscene";
+  var lines = ["What if you could officially participate around your favorite story world?","Not rewrite it.","Create, perform, and play alongside it."];
+  function showLine(n){
+    if (n < lines.length){
+      el.innerHTML = '<div class="cinema" style="color:#fff; font-size:clamp(26px,5vw,44px); font-weight:600; letter-spacing:-.02em; max-width:640px; line-height:1.25">' + lines[n] + '</div>';
+      later(function(){ showLine(n+1); }, n === 0 ? 2300 : 1700);
+    } else {
+      el.innerHTML =
+        '<div class="cinema">' +
+          '<div style="color:#fff; font-size:clamp(56px,10vw,96px); font-weight:700; letter-spacing:-.04em">EWE<span style="color:var(--gold)">y</span></div>' +
+          '<div style="color:rgba(255,255,255,.55); font-size:16px; letter-spacing:.14em; text-transform:uppercase; margin-top:10px; font-weight:500">Step inside the worlds you love</div>' +
+          '<div style="display:inline-flex; align-items:center; gap:8px; margin-top:28px; background:rgba(255,255,255,.1); border:1px solid rgba(255,255,255,.16); border-radius:999px; padding:8px 16px; font-size:13px; font-weight:600; color:#fff"><span class="pulse" style="width:8px; height:8px; border-radius:99px; background:#E5484D; display:inline-block"></span>12,487 fans creating right now</div>' +
+          '<div style="margin-top:30px"><button class="btn white" onclick="next()">Enter EWEy</button></div>' +
+        '</div>';
+      startLive(el, 0, true);
+    }
+  }
+  showLine(0);
+}
+
+function scWorldType(){
+  var el = document.getElementById("scene");
+  el.className = "scene";
+  var tiles = CATEGORIES.map(function(c, i){
+    var act = c[1] === "Series" ? "next()" : "openCatPeek('" + c[1] + "')";
+    var featured = c[1] === "Series" ? '<div style="font-size:10.5px; font-weight:600; letter-spacing:.06em; text-transform:uppercase; color:var(--gold); margin-top:6px">Featured demo</div>' : "";
+    return '<div class="card click center rise" style="padding:22px 12px; animation-delay:' + (i*45) + 'ms" onclick="' + act + '">' +
+      '<div style="font-size:30px">' + c[0] + '</div>' +
+      '<div style="font-weight:600; font-size:15px; margin-top:8px">' + c[1] + '</div>' + featured + '</div>';
+  }).join("");
+  el.innerHTML = '<div class="wrap">' +
+    '<div class="eyebrow">One platform · Every story world</div>' +
+    '<h1>Choose a world.</h1>' +
+    '<p class="sub">Every kind of story can open its doors to its audience — officially.</p>' +
+    '<div style="margin-top:14px"><span class="chip"><span class="dot"></span>🎬 Act it out · Film it · Make it your own</span></div>' +
+    '<div style="margin-top:10px; font-size:13.5px; color:var(--muted)">Most EWEy experiences are fun one-minute videos you create right on your phone.</div>' +
+    '<div class="grid cats">' + tiles + '</div>' +
+  '</div>';
+  startLive(el);
+}
+
+function openCatPeek(name){
+  var items = CATPEEK[name].map(function(p){
+    return '<div style="font-size:14px; line-height:1.5; background:var(--canvas); border-radius:12px; padding:12px 14px; border:1px solid var(--line)">' + p + '</div>';
+  }).join("");
+  var m = document.createElement("div");
+  m.id = "peek"; m.className = "cinema";
+  m.onclick = function(){ m.remove(); };
+  m.innerHTML = '<div class="panel" onclick="event.stopPropagation()">' +
+    '<div style="height:90px; background:linear-gradient(135deg,#0B1220,#2A3A5C)"></div>' +
+    '<div style="padding:28px">' +
+      '<span class="chip"><span class="dot"></span>Quick preview</span>' +
+      '<div style="font-weight:700; font-size:20px; margin-top:12px">' + name + '</div>' +
+      '<div style="font-size:13px; color:var(--muted); margin-top:2px">Example experiences for this genre. Every world gets prompts native to its own audience.</div>' +
+      '<div style="margin-top:16px; display:grid; gap:10px">' + items + '</div>' +
+      '<div style="margin-top:20px; background:var(--goldsoft); border:1px solid rgba(198,160,46,.27); border-radius:12px; padding:12px 14px; font-size:13px; line-height:1.5; color:#8A6E14; font-weight:600">For the complete walkthrough, choose <span style="text-decoration:underline">Series</span> — our featured demo.</div>' +
+      '<div style="margin-top:14px"><button class="btn" style="width:100%" onclick="document.getElementById(\'peek\').remove()">Back to worlds</button></div>' +
+    '</div></div>';
+  document.body.appendChild(m);
+}
+
+function scStoryWorld(){
+  var el = document.getElementById("scene");
+  el.className = "scene";
+  var ids = ["gw","ul","lf"];
+  var cards = ids.map(function(id, i){
+    var w = WORLDS[id];
+    var badge = id === "gw" ? '<div style="position:absolute; top:12px; left:12px"><span class="chip"><span class="dot"></span>Featured demo</span></div>' : "";
+    var cta = id === "gw" ? '<div style="font-size:13px; font-weight:600; margin-top:12px; color:var(--gold)">Enter the full experience &rarr;</div>'
+                          : '<div style="font-size:13px; font-weight:600; margin-top:12px; color:var(--muted)">Quick look &rarr;</div>';
+    var act = id === "gw" ? "go(3)" : "openPeek('" + id + "')";
+    return '<div class="card click rise" style="padding:0; overflow:hidden; animation-delay:' + (i*90) + 'ms" onclick="' + act + '">' +
+      '<div style="height:130px; background:' + w.grad + '; position:relative">' + badge + '</div>' +
+      '<div style="padding:20px">' +
+        '<div style="font-weight:700; font-size:19px; letter-spacing:-.02em">' + w.name + '</div>' +
+        '<div style="font-size:13px; color:var(--muted); margin-top:4px">' + w.genre + '</div>' + cta +
+      '</div></div>';
+  }).join("");
+  el.innerHTML = '<div class="wrap">' +
+    '<div class="eyebrow">Series</div>' +
+    '<h1>Choose a story world.</h1>' +
+    '<p class="sub">Three original worlds, built for participation from day one.</p>' +
+    '<div class="grid worlds">' + cards + '</div>' +
+  '</div>';
+  startLive(el);
+}
+
+function openPeek(id){
+  var w = WORLDS[id];
+  var items = PEEK[id].map(function(p){
+    return '<div style="font-size:14px; line-height:1.5; background:var(--canvas); border-radius:12px; padding:12px 14px; border:1px solid var(--line)">' + p + '</div>';
+  }).join("");
+  var m = document.createElement("div");
+  m.id = "peek"; m.className = "cinema";
+  m.onclick = function(){ m.remove(); };
+  m.innerHTML = '<div class="panel" onclick="event.stopPropagation()">' +
+    '<div style="height:90px; background:' + w.grad + '"></div>' +
+    '<div style="padding:28px">' +
+      '<span class="chip"><span class="dot"></span>Quick preview</span>' +
+      '<div style="font-weight:700; font-size:20px; margin-top:12px">' + w.name + '</div>' +
+      '<div style="font-size:13px; color:var(--muted); margin-top:2px">Every world runs on the same engine — with experiences native to its own characters and fans.</div>' +
+      '<div style="margin-top:16px; display:grid; gap:10px">' + items + '</div>' +
+      '<div style="margin-top:20px"><button class="btn" style="width:100%" onclick="document.getElementById(\'peek\').remove(); go(3)">Take the full walkthrough &rarr;</button></div>' +
+      '<div style="margin-top:12px; text-align:center"><button onclick="document.getElementById(\'peek\').remove()" style="font:inherit; font-size:13px; font-weight:600; color:var(--muted); background:none; border:none; cursor:pointer">Back to story worlds</button></div>' +
+    '</div></div>';
+  document.body.appendChild(m);
+}
+
+function scEntry(){
+  var el = document.getElementById("scene");
+  el.className = "scene worldscene";
+  el.style.background = WORLDS.gw.grad;
+  el.innerHTML = '<div class="cinema" style="text-align:center; max-width:620px">' +
+    '<span class="chip"><span class="dot"></span>Official participation world</span>' +
+    '<div style="color:#fff; font-size:clamp(44px,8vw,72px); font-weight:700; letter-spacing:-.035em; margin-top:22px">Genius Weed</div>' +
+    '<div style="color:rgba(255,255,255,.75); font-size:15px; letter-spacing:.12em; text-transform:uppercase; margin-top:6px; font-weight:500">Comedy · Season One</div>' +
+    '<div class="rise" style="background:rgba(255,255,255,.96); border-radius:20px; padding:24px 26px; margin-top:40px; text-align:left; box-shadow:0 24px 60px rgba(0,0,0,.25); animation-delay:400ms">' +
+      '<div style="display:flex; align-items:center; gap:12px">' +
+        '<div style="width:44px; height:44px; border-radius:99px; background:' + WORLDS.gw.grad + '; display:flex; align-items:center; justify-content:center; color:#fff; font-weight:700; font-size:16px">DC</div>' +
+        '<div><div style="font-weight:700; font-size:15px">Donick Cary</div>' +
+        '<div style="font-size:12.5px; color:var(--muted)">Showrunner · The Simpsons, Silicon Valley, Parks &amp; Rec</div></div>' +
+      '</div>' +
+      '<p style="font-size:16px; line-height:1.6; margin-top:16px">\u201CWelcome to Genius Weed. The café doors are open — come play inside our world, show us your superpower, and win. We can\u2019t wait to see what you make.\u201D</p>' +
+    '</div>' +
+    '<div class="rise" style="margin-top:22px; animation-delay:600ms">' +
+      '<button class="btn white" style="padding:11px 24px; font-size:14.5px" onclick="followDemo(this)">＋ Follow Genius Weed</button>' +
+      '<div style="color:rgba(255,255,255,.65); font-size:12.5px; margin-top:10px">1.2M fans follow this world · Donick\u2019s announcements land here first</div>' +
+    '</div>' +
+    '<div style="margin-top:26px"><button class="btn gold" onclick="next()">Step inside</button></div>' +
+  '</div>';
+}
+
+function scPower(){
+  var el = document.getElementById("scene");
+  el.className = "scene"; el.style.background = "";
+  var cards = SUPERPOWERS.map(function(s, i){
+    var hot = s.id === "perform";
+    var extra = hot ? " border:1.5px solid var(--gold); box-shadow:0 6px 24px rgba(198,160,46,.18);" : "";
+    var badge = hot ? '<div style="margin-bottom:10px"><span class="chip"><span class="dot"></span>Where most fans start</span></div>' : "";
+    return '<div class="card click center rise" style="padding:34px 20px; animation-delay:' + (i*100) + 'ms;' + extra + '" onclick="pickPower(\'' + s.id + '\')">' + badge +
+      '<div style="font-size:42px">' + s.icon + '</div>' +
+      '<div style="font-weight:700; font-size:20px; margin-top:12px; letter-spacing:-.02em">' + s.name + '</div>' +
+      '<div style="font-size:13.5px; color:var(--muted); margin-top:6px">' + s.sub + '</div></div>';
+  }).join("");
+  el.innerHTML = '<div class="wrap">' +
+    '<div class="eyebrow gold">Genius Weed · Official</div>' +
+    '<h1>What\u2019s your superpower?</h1>' +
+    '<p class="sub">Don\u2019t just comment on the story. Act something out, film it on your phone, and entertain the community.</p>' +
+    '<div class="grid powers">' + cards + '</div>' +
+    '<div style="margin-top:26px; font-size:13.5px; color:var(--muted)">More creative paths available — music, photography, animation, AI art…</div>' +
+  '</div>';
+}
+
+function scExperience(){
+  var el = document.getElementById("scene");
+  el.className = "scene";
+  var pName = SUPERPOWERS.filter(function(s){return s.id===S.power;})[0].name;
+  var cards = PROMPTS[S.power].map(function(p, i){
+    var tag = p.tag ? '<div style="margin-bottom:10px"><span class="chip"><span class="dot"></span>' + p.tag + '</span></div>' : "";
+    return '<div class="card click rise" style="animation-delay:' + (i*100) + 'ms" onclick="pickPrompt(' + i + ')">' + tag +
+      '<div style="font-weight:700; font-size:18px; letter-spacing:-.02em">' + p.title + '</div>' +
+      '<div style="font-size:14.5px; color:var(--muted); line-height:1.55; margin-top:6px">' + p.body + '</div></div>';
+  }).join("");
+  var vgrads = [WORLDS.gw.grad, WORLDS.ul.grad, WORLDS.lf.grad];
+  var vh = [["@maya.d","❤️ 12.4K"],["@jayden","❤️ 9.1K"],["@sofia.o","❤️ 7.8K"]];
+  var vids = vh.map(function(h, i){
+    return '<div class="fanvid rise" style="background:' + vgrads[i] + '; animation-delay:' + (i*90) + 'ms">' +
+      '<div class="play">▶</div><div class="cap">' + h[0] + ' · ' + h[1] + '</div>' +
+      '<div class="bar" style="animation-delay:' + (i*700) + 'ms"></div></div>';
+  }).join("");
+  el.innerHTML = '<div class="wrap">' +
+    '<div class="eyebrow gold">Genius Weed · ' + pName + '</div>' +
+    '<h1>Choose an experience.</h1>' +
+    '<p class="sub">Step into the world for one minute. The story stays the story — you play at the edges of it.</p>' +
+    '<div style="max-width:330px; margin:30px auto 0">' +
+      '<div style="font-size:12px; font-weight:600; letter-spacing:.1em; text-transform:uppercase; color:var(--muted); margin-bottom:10px">This week\u2019s featured fan videos</div>' +
+      '<div style="display:grid; grid-template-columns:repeat(3,1fr); gap:10px">' + vids + '</div>' +
+      '<div style="margin-top:12px; font-size:13px; font-weight:600; color:var(--gold)">⭐ Your video could be here by Friday.</div>' +
+    '</div>' +
+    '<div class="stack">' + cards + '</div>' +
+    '<div style="margin-top:24px; font-size:13.5px; color:var(--muted)">📱 Vertical · One minute · Straight from your phone</div>' +
+  '</div>';
+}
+
+function scCreate(){
+  var el = document.getElementById("scene");
+  el.className = "scene";
+  var samples = {
+    perform:{mock:"🎥", label:"Ready to record", body:"One-minute vertical take · your phone is the camera. When you stop recording, your moment goes straight to the world.", italic:false},
+    design:{mock:"🎨", label:"Canvas ready", body:"Upload your design or create right here. Templates match the café\u2019s official style guide.", italic:false},
+    write:{mock:"✍️", label:"Draft saved", body:"⭐⭐⭐⭐⭐ \u201CCame for coffee. Accidentally solved my life.\u201D", italic:true}
+  };
+  var s = samples[S.power];
+  el.innerHTML = '<div class="wrap">' +
+    '<div class="eyebrow gold">' + S.prompt.title + '</div>' +
+    '<h1 class="md">Create your moment.</h1>' +
+    '<div style="max-width:560px; margin:36px auto 0">' +
+      '<div class="card" style="padding:28px">' +
+        '<div style="display:flex; align-items:center; gap:14px">' +
+          '<div style="width:56px; height:56px; border-radius:16px; background:var(--canvas); border:1px solid var(--line); display:flex; align-items:center; justify-content:center; font-size:26px">' + s.mock + '</div>' +
+          '<div><div style="font-weight:700; font-size:15.5px">' + s.label + '</div>' +
+          '<div style="font-size:13px; color:var(--muted); margin-top:2px">Genius Weed · Week 4 Challenge</div></div>' +
+        '</div>' +
+        '<div style="margin-top:18px; background:var(--canvas); border-radius:14px; padding:16px 18px; font-size:15px; line-height:1.6; border:1px solid var(--line);' + (s.italic ? " font-style:italic" : "") + '">' + s.body + '</div>' +
+      '</div>' +
+      '<div style="margin-top:28px"><button class="btn gold big" onclick="next()">Step Into the Story</button></div>' +
+      '<div style="margin-top:14px; font-size:12.5px; color:var(--muted)">Creator approval required for anything official.</div>' +
+    '</div></div>';
+}
+
+function scMosaic(){
+  var el = document.getElementById("scene");
+  el.className = "scene darkscene";
+  el.style.background = "";
+  el.innerHTML = '<div class="cinema" style="text-align:center; padding:24px">' +
+    '<div class="pulse" style="width:74px; height:74px; margin:0 auto; border-radius:22px; background:var(--goldsoft); display:flex; align-items:center; justify-content:center; font-size:32px; box-shadow:0 0 60px rgba(198,160,46,.53)">✨</div>' +
+    '<div class="thread" style="height:90px; width:2px; margin:18px auto 0; background:linear-gradient(var(--gold), transparent)"></div>' +
+    '<div style="color:#fff; font-size:clamp(20px,3.6vw,28px); font-weight:600; letter-spacing:-.02em; margin-top:8px">Your creativity is weaving into the world.</div>' +
+    '<div style="color:rgba(255,255,255,.5); font-size:14.5px; margin-top:10px">Pending creator review</div>' +
+  '</div>';
+  later(function(){
+    var grads = [WORLDS.gw.grad, WORLDS.ul.grad, WORLDS.lf.grad, "linear-gradient(135deg,#0B1220,#2A3A5C)"];
+    var tiles = "";
+    for (var i = 0; i < 91; i++){
+      tiles += '<div class="mtile tile" style="background:' + grads[i%4] + '; animation-delay:' + Math.floor(Math.random()*2400) + 'ms">' + MOSAIC_ICONS[i%MOSAIC_ICONS.length] + '</div>';
+    }
+    el.innerHTML = '<div id="mosaicgrid">' + tiles + '</div><div id="mstats"></div>';
+    later(function(){
+      document.getElementById("mosaicgrid").className = "zoom";
+      document.getElementById("mstats").innerHTML =
+        '<div class="cinema" style="position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center; text-align:center; padding:24px; animation-delay:600ms">' +
+          '<div style="color:#fff; font-size:clamp(40px,7vw,64px); font-weight:700; letter-spacing:-.035em">12,487</div>' +
+          '<div style="color:rgba(255,255,255,.75); font-size:15px; letter-spacing:.14em; text-transform:uppercase; font-weight:500">Creators participating</div>' +
+          '<div style="display:flex; gap:40px; margin-top:30px; flex-wrap:wrap; justify-content:center">' +
+            '<div><div style="color:var(--gold); font-size:30px; font-weight:700">73</div><div style="color:rgba(255,255,255,.55); font-size:13px">Countries</div></div>' +
+            '<div><div style="color:var(--gold); font-size:30px; font-weight:700">1</div><div style="color:rgba(255,255,255,.55); font-size:13px">Story world</div></div>' +
+          '</div>' +
+          '<div style="color:rgba(255,255,255,.55); font-size:13.5px; margin-top:36px">You haven\u2019t seen the best part yet…</div>' +
+          '<div style="margin-top:14px"><button class="btn white" onclick="next()">What happens next</button></div>' +
+          '<div style="position:absolute; bottom:20px; font-size:11.5px; color:rgba(255,255,255,.35)">Illustrative figures</div>' +
+        '</div>';
+    }, 3000);
+  }, 2200);
+}
+
+function scAI(){
+  var el = document.getElementById("scene");
+  el.className = "scene"; el.style.background = "";
+  el.innerHTML = '<div class="wrap">' +
+    '<div class="eyebrow">AI organizes · Creators decide</div>' +
+    '<h1 class="md">Thousands of submissions.<br>One clear signal.</h1>' +
+    '<div style="max-width:480px; margin:36px auto 0">' +
+      '<div class="card" style="padding:26px">' +
+        '<div id="aisub" class="rise" style="display:inline-flex; align-items:center; gap:8px; background:var(--canvas); border:1px solid var(--line); border-radius:999px; padding:8px 16px; font-size:13.5px; font-weight:600">🎥 Your one-minute video enters</div>' +
+        '<div id="aidots" style="position:relative; height:148px; margin-top:18px"></div>' +
+        '<div style="display:flex; justify-content:space-around; font-size:11.5px; font-weight:600; letter-spacing:.08em; text-transform:uppercase; color:var(--muted); margin-top:6px"><span>Sorted</span><span>Tagged</span><span>Top picks</span></div>' +
+        '<div class="ai-verdict" id="airv">' +
+          '<div style="font-weight:700; font-size:15px">🎉 Yours advanced to Producer Review</div>' +
+          '<div style="font-size:13.5px; color:var(--muted); margin-top:4px">Donick Cary picks this week\u2019s finalists.</div>' +
+        '</div>' +
+      '</div>' +
+      '<div style="margin-top:22px; font-size:clamp(17px,2.6vw,20px); font-weight:700; letter-spacing:-.02em; color:var(--ink)">AI organizes. <span style="color:var(--gold)">Creators decide.</span></div>' +
+      '<div style="margin-top:8px; font-size:13px; color:var(--muted)">Nothing becomes official without the creator\u2019s approval.</div>' +
+      '<div style="margin-top:24px; opacity:0; transition:opacity .6s" id="aibtn"><button class="btn" onclick="next()">Continue</button></div>' +
+    '</div></div>';
+  var box = document.getElementById("aidots");
+  var W = box.clientWidth || 300, cols = [W*0.17, W*0.5, W*0.83];
+  var grads = [WORLDS.gw.grad, WORLDS.ul.grad, WORLDS.lf.grad];
+  var dots = [], targets = [];
+  for (var i = 0; i < 66; i++){
+    var d = document.createElement("span");
+    var gold = i === 65;
+    d.style.cssText = "position:absolute; width:" + (gold ? 12 : 8) + "px; height:" + (gold ? 12 : 8) + "px; border-radius:3px; background:" + (gold ? "var(--gold)" : grads[i % 3]) + "; left:" + (Math.random()*W).toFixed(0) + "px; top:" + (Math.random()*140).toFixed(0) + "px; opacity:0; transform:translate(-50%,-50%)" + (gold ? "; box-shadow:0 0 14px rgba(198,160,46,.6); z-index:2" : "") + "; transition:left 1.1s cubic-bezier(.2,.8,.2,1) " + (Math.random()*500).toFixed(0) + "ms, top 1.1s cubic-bezier(.2,.8,.2,1) " + (Math.random()*500).toFixed(0) + "ms, opacity .6s";
+    box.appendChild(d); dots.push(d);
+    var col = gold ? 2 : i % 3;
+    targets.push([cols[col] + (Math.random()*14 - 7), gold ? 8 : 20 + (i % 16) * 8]);
+  }
+  later(function(){
+    for (var k = 0; k < dots.length; k++){
+      dots[k].style.opacity = "1";
+      dots[k].style.left = targets[k][0].toFixed(0) + "px";
+      dots[k].style.top = targets[k][1].toFixed(0) + "px";
+    }
+  }, 700);
+  later(function(){ document.getElementById("airv").className = "ai-verdict show"; }, 2400);
+  later(function(){ document.getElementById("aibtn").style.opacity = "1"; }, 3000);
+}
+
+function scContinues(){
+  var el = document.getElementById("scene");
+  el.className = "scene";
+  var xg = ["linear-gradient(135deg,#1B3A5C,#3E7CB1)","linear-gradient(135deg,#5C1B4A,#B13E8E)", WORLDS.ul.grad, "linear-gradient(135deg,#3A2E10,#8A6E14)"];
+  var xf = [["@tny.hoops","🏈 Sports"],["@lila.sings","🎵 Music"],["@rex.and.me","🐶 Unleashed"],["@docwatcher","🎥 Docs"]];
+  var xvids = xf.map(function(h, i){
+    return '<div class="fanvid rise" style="background:' + xg[i] + '; animation-delay:' + (i*90) + 'ms">' +
+      '<div class="play">▶</div><div class="cap">' + h[0] + '<br>' + h[1] + '</div>' +
+      '<div class="bar" style="animation-delay:' + (i*550) + 'ms"></div></div>';
+  }).join("");
+  var shows = [["⭐","Creator\u2019s Picks"],["😂","Funniest Moments"],["🎨","Top Fan Designs"],["🎭","Best In Character"],["🎬","Official Companion Highlights"],["🏆","Community Favorites"]];
+  var tiles = shows.map(function(s, i){
+    return '<div class="card center rise" style="padding:24px 14px; animation-delay:' + (i*70) + 'ms">' +
+      '<div style="font-size:28px">' + s[0] + '</div>' +
+      '<div style="font-weight:600; font-size:14px; margin-top:10px">' + s[1] + '</div></div>';
+  }).join("");
+  el.innerHTML = '<div class="wrap">' +
+    '<div class="eyebrow gold">Official showcases</div>' +
+    '<h1>The story continues<br>between episodes.</h1>' +
+    '<p class="sub">The best submissions become creator-curated companion content — fresh, official entertainment while the show is off the air.</p>' +
+    '<div style="max-width:440px; margin:30px auto 0">' +
+      '<div style="font-size:12px; font-weight:600; letter-spacing:.1em; text-transform:uppercase; color:var(--muted); margin-bottom:10px">Playing now, across every world</div>' +
+      '<div style="display:grid; grid-template-columns:repeat(4,1fr); gap:10px">' + xvids + '</div>' +
+    '</div>' +
+    '<div class="grid shows">' + tiles + '</div>' +
+    '<div style="margin-top:34px"><button class="btn" onclick="next()">What could you win?</button></div>' +
+  '</div>';
+}
+
+function scBeyond(){
+  var el = document.getElementById("scene");
+  el.className = "scene";
+  var values = [
+    ["🛍️","Limited-edition merchandise","Winning fan designs become official products — credited, licensed, revenue-shared."],
+    ["💼","Talent discovery","\u201CWe found our next poster artist through EWEy.\u201D"],
+    ["🎤","Live experiences","Fan showcases, premieres, and events inside the world."],
+    ["🤝","Sponsored experiences","Brands sponsor participation instead of interrupting it."]
+  ];
+  var strips = [WORLDS.gw.grad, WORLDS.ul.grad, WORLDS.lf.grad, WORLDS.gw.grad, WORLDS.ul.grad].map(function(g){
+    return '<div style="flex:1; height:44px; border-radius:6px; background:' + g + '; opacity:.9"></div>';
+  }).join("");
+  var rows = values.map(function(v){
+    return '<div style="display:flex; gap:12px; align-items:flex-start">' +
+      '<div style="font-size:20px; line-height:1">' + v[0] + '</div>' +
+      '<div><div style="font-weight:600; font-size:14.5px">' + v[1] + '</div>' +
+      '<div style="font-size:13px; color:var(--muted); line-height:1.5">' + v[2] + '</div></div></div>';
+  }).join("");
+  el.innerHTML = '<div class="wrap">' +
+    '<div class="eyebrow gold">Recognition is the reward</div>' +
+    '<h1 class="md">Your creativity, made official.</h1>' +
+    '<div style="max-width:560px; margin:34px auto 0">' +
+      '<div class="card" style="padding:0; overflow:hidden">' +
+        '<div style="background:var(--dark); padding:26px 26px 22px">' +
+          '<div style="font-size:11px; letter-spacing:.16em; text-transform:uppercase; color:rgba(255,255,255,.45); font-weight:600">Now streaming</div>' +
+          '<div style="color:#fff; font-weight:700; font-size:21px; margin-top:8px; letter-spacing:-.02em">Genius Weed — Fan Highlights: Vol. 1</div>' +
+          '<div style="display:flex; gap:6px; margin-top:14px">' + strips + '</div>' +
+          '<div style="margin-top:16px; font-size:12.5px; color:var(--gold); font-weight:600">Audience Contributions Powered by EWEy</div>' +
+        '</div>' +
+        '<div style="padding:18px 26px; display:grid; gap:14px">' + rows + '</div>' +
+      '</div>' +
+      '<div style="margin-top:28px; font-size:13px; color:var(--muted)">This is where creators get excited…</div>' +
+      '<div style="margin-top:12px"><button class="btn" onclick="next()">Now see the creator\u2019s side</button></div>' +
+    '</div></div>';
+}
+
+function scCreator(){
+  var el = document.getElementById("scene");
+  el.className = "scene";
+  var stats = [["12,487","Entries"],["73","Countries"],["2.3M","Votes"],["91%","Positive sentiment"]];
+  var statHtml = stats.map(function(s){
+    return '<div><div style="font-size:26px; font-weight:700; letter-spacing:-.02em">' + s[0] + '</div>' +
+      '<div style="font-size:12.5px; color:var(--muted)">' + s[1] + '</div></div>';
+  }).join("");
+  var bars = [28,36,44,42,58,74,100].map(function(h, i){
+    return '<div class="rise" style="flex:1; height:' + h + '%; border-radius:4px 4px 0 0; background:' + (i === 6 ? "var(--gold)" : "var(--goldsoft)") + '; animation-delay:' + (i*90) + 'ms"></div>';
+  }).join("");
+  var chips = ["Video","Design","Writing","Audio"].map(function(t, i){
+    return '<span class="typechip' + (i < 2 ? " on" : "") + '">' + t + '</span>';
+  }).join("");
+  el.innerHTML = '<div class="wrap wide">' +
+    '<div class="eyebrow">The creator\u2019s cockpit</div>' +
+    '<h1 class="md">Creators launch in minutes.<br>And own every insight.</h1>' +
+    '<div class="grid creator">' +
+      '<div class="card">' +
+        '<div style="font-size:12px; font-weight:600; letter-spacing:.1em; text-transform:uppercase; color:var(--muted)">Create new experience</div>' +
+        '<div style="margin-top:14px; background:var(--canvas); border-radius:12px; padding:14px 16px; font-size:14.5px; border:1px solid var(--line); line-height:1.5; font-style:italic">\u201CFilm you and your friends joking about the time Sabatini\u2019s cousin did…\u201D</div>' +
+        '<div style="display:flex; flex-wrap:wrap; gap:8px; margin-top:14px">' + chips + '</div>' +
+        '<div style="margin-top:18px"><button class="btn gold" style="width:100%; padding:13px 24px" id="pubbtn" onclick="publishDemo()">Publish experience</button></div>' +
+        '<div style="margin-top:16px; padding-top:14px; border-top:1px solid var(--line)">' +
+          '<div style="font-size:12px; font-weight:600; letter-spacing:.1em; text-transform:uppercase; color:var(--muted)">Trending now</div>' +
+          '<div style="font-weight:700; font-size:14.5px; margin-top:8px">\u201CThe Time Sabatini\u2019s Cousin…\u201D <span style="color:var(--gold)">▲ 2,114 today</span></div>' +
+          '<div style="display:flex; gap:8px; margin-top:10px">' +
+            '<button class="typechip" style="cursor:pointer; font:inherit; font-size:12.5px; font-weight:600; background:#fff" onclick="approveDemo(this)">✓ Approve</button>' +
+            '<button class="typechip" style="cursor:pointer; font:inherit; font-size:12.5px; font-weight:600; background:#fff" onclick="this.className=\'typechip on\'; this.textContent=\'⭐ Featured\'">⭐ Feature</button>' +
+            '<span class="typechip">🛍️ Launch merch</span>' +
+          '</div>' +
+        '</div>' +
+      '</div>' +
+      '<div class="card">' +
+        '<div style="font-size:12px; font-weight:600; letter-spacing:.1em; text-transform:uppercase; color:var(--muted)">Participation dashboard</div>' +
+        '<div style="display:grid; grid-template-columns:1fr 1fr; gap:14px; margin-top:16px">' + statHtml + '</div>' +
+        '<div style="display:flex; gap:5px; align-items:flex-end; height:40px; margin-top:16px">' + bars + '</div>' +
+        '<div style="font-size:12px; color:var(--muted); margin-top:6px">Fan growth <b style="color:var(--ink)">+212%</b> this season</div>' +
+        '<div style="margin-top:14px; padding-top:12px; border-top:1px solid var(--line); display:flex; justify-content:space-between; font-size:13.5px"><span>👥 World followers</span><b>1.2M</b></div>' +
+        '<div style="display:flex; justify-content:space-between; font-size:13.5px; margin-top:8px"><span>🛍️ Merch revenue</span><b>$48K</b></div>' +
+        '<div style="display:flex; justify-content:space-between; font-size:13.5px; margin-top:8px"><span>🤝 Active sponsors</span><b>6</b></div>' +
+        '<div style="display:flex; justify-content:space-between; font-size:13.5px; margin-top:8px"><span>⭐ Featured creators</span><b>24</b></div>' +
+        '<div style="margin-top:12px; font-size:10.5px; color:var(--muted)">Illustrative figures</div>' +
+      '</div>' +
+    '</div>' +
+    '<div style="margin-top:24px; font-size:13.5px; color:var(--muted)">Every interaction generates audience intelligence the creator owns — not an outside platform.</div>' +
+    '<div style="margin-top:26px"><button class="btn" onclick="next()">One last thing</button></div>' +
+  '</div>';
+}
+
+function approveDemo(b){
+  b.style.background = "#2E7D4F"; b.style.color = "#fff"; b.style.borderColor = "#2E7D4F";
+  b.textContent = "✓ Approved";
+}
+
+function publishDemo(){
+  var b = document.getElementById("pubbtn");
+  b.className = "btn green"; b.style.width = "100%";
+  b.innerHTML = "&#10003; Live in your world";
+}
+
+function followDemo(b){
+  b.style.background = "#2E7D4F"; b.style.color = "#fff";
+  b.textContent = "✓ Following";
+}
+
+function scWin(){
+  var el = document.getElementById("scene");
+  el.className = "scene";
+  var prizes = [
+    ["🎟️","Premiere tickets","Front-row at the premiere. Courtside at the game. Backstage at the show."],
+    ["💰","Cash prizes","Weekly challenges with real money on the line."],
+    ["🍽️","Lunch with the artist","The top fan creation gets a seat at the table."],
+    ["🎬","Step on set","Set visits, meet the cast, behind-the-scenes access."],
+    ["🏆","Official credit","Your name in the world — merch tags, credits, showcases."],
+    ["❤️","Give back","Fun challenges that raise real money for nonprofits — the world donates for every entry."]
+  ];
+  var cards = prizes.map(function(p, i){
+    return '<div class="card rise" style="padding:22px; animation-delay:' + (i*80) + 'ms">' +
+      '<div style="font-size:28px">' + p[0] + '</div>' +
+      '<div style="font-weight:700; font-size:16px; margin-top:10px; letter-spacing:-.02em">' + p[1] + '</div>' +
+      '<div style="font-size:13.5px; color:var(--muted); line-height:1.5; margin-top:5px">' + p[2] + '</div></div>';
+  }).join("");
+  el.innerHTML = '<div class="wrap wide">' +
+    '<div class="eyebrow gold">Real stakes</div>' +
+    '<h1>What could you win?</h1>' +
+    '<p class="sub">Participation comes with real rewards — set by the creator, delivered by the world.</p>' +
+    '<div class="grid powers" style="max-width:820px">' + cards + '</div>' +
+    '<div style="margin-top:24px; font-size:13.5px; color:var(--muted); line-height:1.6">And when your work gets featured, you earn points — <span style="font-weight:600; color:var(--ink)">recognition that adds up, every time it plays.</span></div>' +
+    '<div style="margin-top:28px"><button class="btn" onclick="next()">Happening near you</button></div>' +
+  '</div>';
+}
+
+function scLocal(){
+  var el = document.getElementById("scene");
+  el.className = "scene";
+  el.innerHTML = '<div class="wrap">' +
+    '<div class="eyebrow">Story worlds live in the real world</div>' +
+    '<h1 class="md">What\u2019s happening in your city today?</h1>' +
+    '<p class="sub">Pop-ups, screenings, challenges — every world can show up where its fans actually live.</p>' +
+    '<div style="max-width:420px; margin:34px auto 0">' +
+      '<div class="card center" style="padding:26px">' +
+        '<div style="font-size:12px; font-weight:600; letter-spacing:.1em; text-transform:uppercase; color:var(--muted)">Enter your ZIP code</div>' +
+        '<div style="display:flex; gap:10px; margin-top:14px">' +
+          '<input id="zipin" inputmode="numeric" maxlength="5" placeholder="02554" ' +
+            'style="flex:1; font:inherit; font-size:18px; font-weight:600; letter-spacing:.14em; text-align:center; padding:13px 14px; border-radius:14px; border:1px solid var(--line); background:var(--canvas); color:var(--ink); outline:none; min-width:0" ' +
+            'onkeydown="if(event.key===\'Enter\')showLocal()">' +
+          '<button class="btn gold" style="padding:13px 22px; white-space:nowrap" onclick="showLocal()">Show me</button>' +
+        '</div>' +
+      '</div>' +
+      '<div id="localout"></div>' +
+      '<div id="localskip" style="margin-top:16px"><button onclick="next()" style="font:inherit; font-size:13px; font-weight:600; color:var(--muted); background:none; border:none; cursor:pointer">Skip for now</button></div>' +
+    '</div></div>';
+  later(function(){ var z = document.getElementById("zipin"); if (z) z.focus(); }, 500);
+}
+
+function showLocal(){
+  var z = (document.getElementById("zipin").value || "").replace(/[^0-9]/g,"");
+  if (z.length < 5) z = "02554";
+  var happenings = [
+    ["☕","Genius Weed pop-up caf\u00E9","Tomorrow \u00B7 2.1 miles away \u00B7 first 50 fans get the limited-edition mug"],
+    ["🎬","Fan showcase screening","Tonight \u00B7 creator-picked highlights on the big screen"],
+    ["📚","Bookstore takeover","Saturday \u00B7 signed editions + live fan readings"],
+    ["🎤","Festival fan stage","This weekend \u00B7 top EWEy creators perform live"],
+    ["❤️","Nonprofit flash challenge","Post a 60-second video today \u2014 the show donates for every entry"]
+  ];
+  var cards = happenings.map(function(h, i){
+    return '<div class="card rise" style="animation-delay:' + (i*140) + 'ms; display:flex; gap:14px; align-items:flex-start; padding:18px 20px">' +
+      '<div style="font-size:24px; line-height:1">' + h[0] + '</div>' +
+      '<div><div style="font-weight:700; font-size:15.5px; letter-spacing:-.02em">' + h[1] + '</div>' +
+      '<div style="font-size:13px; color:var(--muted); line-height:1.5; margin-top:3px">' + h[2] + '</div></div></div>';
+  }).join("");
+  document.getElementById("localout").innerHTML =
+    '<div style="margin-top:22px; text-align:left">' +
+      '<div class="rise" style="font-size:12px; font-weight:600; letter-spacing:.1em; text-transform:uppercase; color:var(--gold); margin-bottom:12px; text-align:center">Near ' + esc(z) + ' this week</div>' +
+      '<div style="display:grid; gap:12px">' + cards + '</div>' +
+      '<div class="rise" style="animation-delay:500ms; margin-top:16px; background:var(--goldsoft); border:1px solid rgba(198,160,46,.27); border-radius:14px; padding:14px 16px; font-size:13.5px; line-height:1.5; color:#8A6E14; font-weight:600; text-align:center">🎟️ Local winners this week take home premiere tickets + cash prizes</div>' +
+      '<div class="rise" style="animation-delay:580ms; margin-top:12px; font-size:12.5px; color:var(--muted); text-align:center">Restaurants · Venues · Festivals · Museums · Bookstores — every world can show up in yours.</div>' +
+      '<div class="rise" style="animation-delay:650ms; margin-top:22px"><button class="btn big" onclick="next()">Beyond the story</button></div>' +
+    '</div>';
+  document.getElementById("localskip").style.display = "none";
+  document.getElementById("zipin").blur();
+}
+
+function scEnd(){
+  var el = document.getElementById("scene");
+  el.className = "scene darkscene";
+  el.innerHTML = '<div class="cinema" style="color:#fff; font-size:clamp(24px,4.6vw,38px); font-weight:600; letter-spacing:-.02em; max-width:560px; line-height:1.3">Today you experienced one story world.</div>';
+  later(function(){
+    var pills = CATEGORIES.map(function(c, i){
+      return '<span class="catpill tile" style="animation-delay:' + (i*120) + 'ms">' + c[0] + ' ' + c[1] + '</span>';
+    }).join("");
+    el.innerHTML = '<div class="cinema" style="max-width:680px">' +
+      '<div style="color:rgba(255,255,255,.6); font-size:15px; letter-spacing:.12em; text-transform:uppercase; font-weight:500; margin-bottom:24px">Now imagine it for</div>' +
+      '<div style="display:flex; flex-wrap:wrap; gap:10px; justify-content:center">' + pills + '</div>' +
+    '</div>';
+  }, 2100);
+  later(scEndNetwork, 4600);
+}
+
+function scEndNetwork(){
+  var el = document.getElementById("scene");
+  var reduce = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  var W = el.clientWidth || window.innerWidth, H = el.clientHeight || window.innerHeight;
+  var cx = W/2, cy = H/2, R = Math.min(W, H) * 0.30;
+  var N = 150, pts = [], parts = "";
+  for (var i = 0; i < N; i++){
+    var a = Math.random() * Math.PI * 2;
+    var r = R * Math.sqrt(Math.random());
+    pts.push([cx + Math.cos(a)*r, cy + Math.sin(a)*r]);
+    var sx = Math.random() * W, sy = Math.random() * H;
+    parts += '<span class="npart" style="position:absolute; left:' + sx.toFixed(0) + 'px; top:' + sy.toFixed(0) + 'px; font-size:' + (10 + Math.random()*7).toFixed(0) + 'px; opacity:0; transform:translate(-50%,-50%); transition:left 2.2s cubic-bezier(.2,.8,.2,1) ' + (Math.random()*800).toFixed(0) + 'ms, top 2.2s cubic-bezier(.2,.8,.2,1) ' + (Math.random()*800).toFixed(0) + 'ms, opacity 1s">' + MOSAIC_ICONS[i % MOSAIC_ICONS.length] + '</span>';
+  }
+  var lines = "";
+  for (var j = 0; j < 220 && lines.split("<line").length < 65; j++){
+    var p1 = pts[Math.floor(Math.random()*N)], p2 = pts[Math.floor(Math.random()*N)];
+    var d = Math.hypot(p1[0]-p2[0], p1[1]-p2[1]);
+    if (d > 12 && d < R*0.55){
+      lines += '<line x1="' + p1[0].toFixed(0) + '" y1="' + p1[1].toFixed(0) + '" x2="' + p2[0].toFixed(0) + '" y2="' + p2[1].toFixed(0) + '" stroke="rgba(198,160,46,.3)" stroke-width="1"/>';
+    }
+  }
+  var ringR = Math.min(R * 1.5, Math.min(cx, cy) - 44);
+  var eco = "", spokes = "";
+  for (var e = 0; e < CATEGORIES.length; e++){
+    var ea = -Math.PI/2 + e * (Math.PI*2 / CATEGORIES.length);
+    var ex = cx + Math.cos(ea) * ringR, ey = cy + Math.sin(ea) * ringR;
+    eco += '<span class="econode" style="position:absolute; left:' + ex.toFixed(0) + 'px; top:' + ey.toFixed(0) + 'px; transform:translate(-50%,-50%); white-space:nowrap; font-size:11.5px; font-weight:600; color:#fff; background:rgba(255,255,255,.08); border:1px solid rgba(255,255,255,.2); border-radius:999px; padding:5px 11px; opacity:0; transition:opacity .8s ' + (e*100) + 'ms">' + CATEGORIES[e][0] + ' ' + CATEGORIES[e][1] + '</span>';
+    spokes += '<line x1="' + (cx + Math.cos(ea)*R*0.85).toFixed(0) + '" y1="' + (cy + Math.sin(ea)*R*0.85).toFixed(0) + '" x2="' + ex.toFixed(0) + '" y2="' + ey.toFixed(0) + '" stroke="rgba(198,160,46,.28)" stroke-width="1"/>';
+  }
+  el.innerHTML =
+    '<div id="net" style="position:absolute; inset:0; overflow:hidden; transition:opacity 1.2s, filter 1.2s">' +
+      '<div id="netglow" style="position:absolute; left:50%; top:50%; width:' + (R*2.7).toFixed(0) + 'px; height:' + (R*2.7).toFixed(0) + 'px; transform:translate(-50%,-50%); border-radius:50%; background:radial-gradient(circle, rgba(198,160,46,.3), transparent 65%); opacity:0; transition:opacity 1.6s"></div>' +
+      '<svg id="netlines" width="' + W + '" height="' + H + '" style="position:absolute; inset:0; opacity:0; transition:opacity 1.4s">' + lines + '</svg>' +
+      '<svg id="ecolines" width="' + W + '" height="' + H + '" style="position:absolute; inset:0; opacity:0; transition:opacity 1.2s">' + spokes + '</svg>' +
+      parts + eco +
+    '</div>' +
+    '<div id="networds" style="position:relative; z-index:2; text-align:center; padding:24px">' +
+      '<div id="nw1" style="color:#fff; font-size:clamp(22px,4.2vw,34px); font-weight:600; letter-spacing:-.02em; line-height:1.3; opacity:0; transition:opacity 1.1s, transform 1.1s; transform:translateY(14px)">Every story becomes a community.</div>' +
+      '<div id="nw2" style="color:#fff; font-size:clamp(22px,4.2vw,34px); font-weight:600; letter-spacing:-.02em; line-height:1.3; margin-top:8px; opacity:0; transition:opacity 1.1s, transform 1.1s; transform:translateY(14px)">Every fan becomes a creator.</div>' +
+      '<div id="nw2b" style="color:var(--gold); font-size:clamp(22px,4.2vw,34px); font-weight:600; letter-spacing:-.02em; line-height:1.3; margin-top:8px; opacity:0; transition:opacity 1.1s, transform 1.1s; transform:translateY(14px)">Every creator builds a world.</div>' +
+      '<div id="nw3" style="opacity:0; transition:opacity 1.4s">' +
+        '<div style="color:#fff; font-size:clamp(44px,8vw,68px); font-weight:700; letter-spacing:-.04em; margin-top:38px">EWE<span style="color:var(--gold)">y</span></div>' +
+        '<div style="color:rgba(255,255,255,.6); font-size:13px; letter-spacing:.14em; text-transform:uppercase; font-weight:500; margin-top:12px">The Participation Layer for All IP</div>' +
+        '<div style="color:rgba(255,255,255,.4); font-size:12.5px; margin-top:8px">Everyone Wins. Especially You.</div>' +
+      '</div>' +
+      '<div id="nw4" style="opacity:0; transition:opacity 1.2s; margin-top:34px"><button class="btn white" onclick="restart()">Experience it again</button></div>' +
+    '</div>';
+  function converge(){
+    var els = el.querySelectorAll(".npart");
+    for (var k = 0; k < els.length; k++){
+      els[k].style.left = pts[k][0].toFixed(0) + "px";
+      els[k].style.top = pts[k][1].toFixed(0) + "px";
+      els[k].style.opacity = ".9";
+    }
+  }
+  function weave(){
+    document.getElementById("netlines").style.opacity = "1";
+    document.getElementById("netglow").style.opacity = "1";
+  }
+  function eco_in(){
+    document.getElementById("ecolines").style.opacity = "1";
+    var ns = el.querySelectorAll(".econode");
+    for (var q = 0; q < ns.length; q++) ns[q].style.opacity = "1";
+  }
+  function dim(){
+    var n = document.getElementById("net");
+    n.style.opacity = ".28"; n.style.filter = "blur(1px)";
+  }
+  function word(id){
+    var w = document.getElementById(id);
+    w.style.opacity = "1"; w.style.transform = "none";
+  }
+  if (reduce){
+    converge(); weave(); eco_in(); dim(); word("nw1"); word("nw2"); word("nw2b"); word("nw3"); word("nw4");
+    var all = el.querySelectorAll(".npart, .econode, #netlines, #ecolines, #netglow, #net, #nw1, #nw2, #nw2b, #nw3, #nw4");
+    for (var m = 0; m < all.length; m++) all[m].style.transition = "none";
+    return;
+  }
+  later(function(){ requestAnimationFrame(converge); }, 60);
+  later(weave, 2300);
+  later(eco_in, 3500);
+  later(function(){ dim(); word("nw1"); }, 5400);
+  later(function(){ word("nw2"); }, 6600);
+  later(function(){ word("nw2b"); }, 7800);
+  later(function(){ word("nw3"); }, 9400);
+  later(function(){ word("nw4"); }, 10800);
+}
+
+// ————— Router —————
+function render(){
+  var el = document.getElementById("scene");
+  el.style.background = "";
+  var id = SCENES[S.i];
+  renderChrome();
+  if (id === "cold") scCold();
+  else if (id === "worldtype") scWorldType();
+  else if (id === "storyworld") scStoryWorld();
+  else if (id === "entry") scEntry();
+  else if (id === "power") scPower();
+  else if (id === "experience") scExperience();
+  else if (id === "create") scCreate();
+  else if (id === "mosaic") scMosaic();
+  else if (id === "ai") scAI();
+  else if (id === "continues") scContinues();
+  else if (id === "win") scWin();
+  else if (id === "local") scLocal();
+  else if (id === "beyond") scBeyond();
+  else if (id === "creator") scCreator();
+  else if (id === "end") scEnd();
+  el.classList.remove("scenein"); void el.offsetWidth; el.classList.add("scenein");
+}
+var fb = document.getElementById("fallback");
+if (fb) fb.remove();
+render();
+</script>
+</body>
+</html>
